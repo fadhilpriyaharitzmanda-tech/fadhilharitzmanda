@@ -424,33 +424,44 @@ export const skills = [
 export const projects = [
   {
     id: 1,
-    slug: "cyber-security-monitoring",
-    title: "Cyber Security Network Scanner & Defense",
+    slug: "edify-elearning-playground",
+    title: "Edify - E-Learning & Coding Playground",
     category: "Web",
     year: "2026",
-    description: "Aplikasi dan skrip analisis keamanan jaringan untuk memindai port terbuka, menganalisis paket lalu lintas data, dan mendeteksi anomali pada sistem lokal.",
-    overview: "Dikembangkan dalam persiapan dan implementasi LKS Cyber Security 2026 guna menguji ketahanan sistem jaringan lokal terhadap potensi serangan siber.",
-    problem: "Banyak sistem jaringan lokal di lingkungan pendidikan atau perkantoran yang belum memiliki monitoring keamanan real-time untuk mendeteksi intrusi.",
-    solution: "Membangun sistem pemantauan berbasis Linux dan skrip otomatisasi yang memberikan laporan keamanan secara langsung terhadap aktivitas mencurigakan.",
+    description: "Platform e-learning pelatihan fundamental skill digital dilengkapi in-browser code playground dan terminal sandbox interaktif berbasis React.js.",
+    overview: "Edify adalah platform pembelajaran digital dan evaluasi koding modern yang dirancang untuk melatih kemampuan fundamental pemrograman pemula secara langsung di peramban tanpa perlu konfigurasi lokal yang rumit.",
+    problem: "Banyak pemula yang ingin belajar pemrograman terkendala oleh proses instalasi compiler/runtime di komputer mereka, serta membutuhkan sarana latihan coding terarah dengan umpan balik instan.",
+    solution: "Membangun web e-learning interaktif berbasis React.js dengan integrasi in-browser coding playground multi-bahasa, editor kode dengan sintaks highlight, dan konsol terminal real-time.",
     features: [
-      "Port scanning dan vulnerability detection otomatis",
-      "Network packet sniffing dan filtering",
-      "Log analysis dan dashboard pelaporan ringkas",
-      "Konfigurasi firewall dan aturan akses keamanan"
+      "Katalog pelatihan fundamental skill digital (Web Development, AI Engineering, UI/UX Design, Data Science)",
+      "In-browser interactive coding playground tanpa perlu instalasi lokal",
+      "Dukungan multi-bahasa pemrograman: Python, PHP, JavaScript, Java, C#, dan C++",
+      "Editor kode cerdas dengan integrasi shortcut eksekusi (Ctrl + Enter) dan indikator engine siap",
+      "Terminal console terintegrasi untuk menampilkan output program secara langsung",
+      "Antarmuka modern, interaktif, dan responsif dibangun menggunakan React.js"
     ],
-    role: "Lead Developer & Security Analyst",
-    image: "/projects/cashin/cashin-mockup.jpg",
+    role: "Frontend & Web Developer",
+    image: "/projects/edify-elearning/edify-hero.jpg",
     images: [
       {
-        src: "/projects/cashin/cashin-mockup.jpg",
-        caption: "Cyber Security Testing Dashboard UI"
+        src: "/projects/edify-elearning/edify-hero.jpg",
+        caption: "Halaman Utama Edify - Pelatihan Fundamental Skill Digital bersama Praktisi Terbaik"
+      },
+      {
+        src: "/projects/edify-elearning/edify-languages.png",
+        caption: "Fundamental Coding Playground - Pilihan Bahasa (Python, PHP, JavaScript, Java, C#, C++)"
+      },
+      {
+        src: "/projects/edify-elearning/edify-playground.png",
+        caption: "Python Code Playground & Terminal Console - Tulis dan Jalankan Kode Python Instan di Browser"
       }
     ],
     technologies: [
-      "Cyber Security",
-      "Linux",
-      "Python",
-      "Network Analysis"
+      "React.js",
+      "JavaScript",
+      "Tailwind CSS",
+      "HTML5/CSS3",
+      "Python Playground"
     ],
     links: {
       github: "https://github.com/",
@@ -460,32 +471,42 @@ export const projects = [
   },
   {
     id: 2,
-    slug: "jagoan-hosting-web",
-    title: "High Performance Cloud Web Portal",
+    slug: "jembatankarya",
+    title: "JembatanKarya - Platform Microjob Pemuda & UMKM",
     category: "Web",
-    year: "2025",
-    description: "Website modern dengan optimasi performa tinggi, caching terstruktur, dan integrasi cloud hosting yang dikompetisikan pada Jagoan Hosting 2.0.",
-    overview: "Proyek website interaktif yang dirancang dengan arsitektur frontend ringan untuk mencapai skor performa maksimal dan waktu muat ultra-cepat di cloud hosting.",
-    problem: "Website konvensional seringkali lambat diakses dan mengalami bottleneck performa ketika dikunjungi oleh banyak pengguna sekaligus.",
-    solution: "Menerapkan asset bundling efisien, lazy loading, dan caching strategi tingkat lanjut di atas infrastruktur Jagoan Hosting.",
+    year: "2026",
+    description: "Platform microjob yang menghubungkan talenta kreatif generasi muda dengan kebutuhan operasional UMKM lokal di Indonesia menggunakan Laravel dan Bootstrap.",
+    overview: "JembatanKarya merupakan platform web interaktif yang dirancang khusus untuk mempertemukan keahlian anak muda (pelajar, mahasiswa, fresh graduate, dan freelancer) dengan kebutuhan operasional nyata dari ribuan UMKM lokal di seluruh Indonesia, menciptakan ekosistem kerja sama yang saling memberdayakan.",
+    problem: "Banyak talenta muda berbakat kesulitan menemukan peluang kerja sampingan (microjob) atau magang terpercaya yang fleksibel, sementara pelaku UMKM lokal memerlukan bantuan tenaga kreatif (desain grafis, social media, kasir/barista, IT & website) namun memiliki keterbatasan anggaran dan akses rekrutmen.",
+    solution: "Membangun platform JembatanKarya berbasis framework Laravel dan Bootstrap dengan fitur pencarian tugas terstruktur berdasarkan minat, portal pendaftaran talenta muda terverifikasi, serta dashboard khusus pelaku UMKM untuk mempublikasikan lowongan kerja secara cepat dan terarah.",
     features: [
-      "Skor Lighthouse 95+ pada mobile dan desktop",
-      "Desain antarmuka responsif dan modern",
-      "Deployment terotomatisasi dengan integrasi Git",
-      "Optimasi SEO dan arsitektur kode modular"
+      "Katalog eksplorasi lowongan kerja terverifikasi untuk ribuan UMKM lokal di Indonesia",
+      "Pencarian & filter lowongan berbasis minat: Website & IT, Desain Grafis, Barista & FnB, Social Media & TikTok, Staff Admin & Kasir, Digital Marketing",
+      "Dashboard solusi UMKM untuk publikasi lowongan kerja, manajemen kandidat masuk, dan status rekrutmen",
+      "Sistem profil talenta muda terverifikasi dan siap kerja dengan integrasi portofolio",
+      "Desain antarmuka modern, intuitif, dan responsif menggunakan Bootstrap 5 dan arsitektur Laravel MVC"
     ],
     role: "Full-Stack Web Developer",
-    image: "/projects/catatin/catatin-mockup.jpg",
+    image: "/projects/jembatan-karya/jembatankarya-hero.jpg",
     images: [
       {
-        src: "/projects/catatin/catatin-mockup.jpg",
-        caption: "Web Portal Interface & Analytics"
+        src: "/projects/jembatan-karya/jembatankarya-hero.jpg",
+        caption: "Halaman Utama JembatanKarya - Menghubungkan Talenta Muda Terbaik dengan Ribuan UMKM Terpercaya di Seluruh Indonesia"
+      },
+      {
+        src: "/projects/jembatan-karya/jembatankarya-solusi-umkm.jpg",
+        caption: "Dashboard Solusi UMKM - Pasang Lowongan, Pantau Kandidat Masuk, dan Akses Talenta Terverifikasi & Siap Kerja"
+      },
+      {
+        src: "/projects/jembatan-karya/jembatankarya-kategori-lowongan.jpg",
+        caption: "Kategori Tugas & Minat serta Daftar Lowongan Kerja Terbaru dari Berbagai Sektor UMKM Mitra"
       }
     ],
     technologies: [
-      "React.js",
-      "Tailwind CSS",
-      "Cloud Hosting",
+      "Laravel",
+      "Bootstrap",
+      "PHP",
+      "MySQL",
       "JavaScript"
     ],
     links: {
@@ -496,33 +517,40 @@ export const projects = [
   },
   {
     id: 3,
-    slug: "ozeva-coding-project",
-    title: "Algorithmic Software Engine & Task Manager",
+    slug: "absensi-kelas-rpl",
+    title: "Sistem Presensi & Absensi Kelas RPL B",
     category: "Web",
-    year: "2024",
-    description: "Sistem pengelolaan tugas dan logika algoritma cerdas yang dikembangkan selama bootcamp intensif Ozeva Vali Coding.",
-    overview: "Menyelesaikan tantangan akhir bootcamp dengan merancang software manajemen alur kerja yang mengutamakan struktur data efisien dan antarmuka intuitif.",
-    problem: "Pengelolaan alur kerja seringkali berantakan tanpa struktur prioritas algoritma yang terukur.",
-    solution: "Mengimplementasikan struktur data antrean dan penugasan prioritas dalam antarmuka web interaktif.",
+    year: "2026",
+    description: "Aplikasi web manajemen presensi harian siswa kelas RPL B dengan dashboard rekap kehadiran real-time berbasis Laravel dan Bootstrap.",
+    overview: "Sistem Presensi Kelas RPL B adalah aplikasi berbasis web yang dikembangkan untuk mendigitalkan pencatatan absensi harian siswa secara cepat, terstruktur, dan akurat untuk memantau kedisiplinan dan rekapitulasi kehadiran kelas.",
+    problem: "Pencatatan presensi manual di buku absen konvensional seringkali memakan waktu jam pelajaran, rentan hilang, serta menyulitkan wali kelas dalam merekap data siswa yang sakit, izin, atau alpa secara cepat.",
+    solution: "Mengembangkan aplikasi absensi web dengan framework Laravel dan Bootstrap yang menyediakan input status presensi per siswa sekali klik, dashboard visual statistik kehadiran harian, serta pencatatan riwayat otomatis.",
     features: [
-      "Algoritma penyortiran prioritas tugas dinamis",
-      "State management responsif tanpa re-render berlebih",
-      "Penyimpanan data lokal yang persisten",
-      "Antarmuka bersih dan mudah digunakan"
+      "Dashboard statistik kehadiran real-time (Hadir, Sakit, Izin, Alpa) dengan kartu indikator warna",
+      "Banner pengingat pencatatan presensi harian dengan sisa jumlah siswa yang belum dicek",
+      "Formulir input presensi harian per siswa dengan tombol status instan (Hadir, Sakit, Izin, Alpha)",
+      "Pencatatan identitas siswa lengkap (Nama Siswa, Nomor Induk/Kode RPL)",
+      "Panel riwayat presensi, laporan kehadiran berkala, serta kelola data kelas dan user admin",
+      "Desain antarmuka bersih, cepat, dan responsif menggunakan Bootstrap"
     ],
-    role: "Software Developer",
-    image: "/projects/courtin/courtin-mockup.jpg",
+    role: "Full-Stack Web Developer",
+    image: "/projects/absensi-rpl/absensi-dashboard.png",
     images: [
       {
-        src: "/projects/courtin/courtin-mockup.jpg",
-        caption: "Task & Algorithm Engine Dashboard"
+        src: "/projects/absensi-rpl/absensi-dashboard.png",
+        caption: "Dashboard Ringkasan Kehadiran Kelas RPL B - Metrik Siswa Hadir, Sakit, Izin, Alpa & Status Presensi"
+      },
+      {
+        src: "/projects/absensi-rpl/absensi-input-presensi.png",
+        caption: "Input Presensi Harian - Pemilihan Status Cepat per Siswa dan Tombol Simpan Presensi"
       }
     ],
     technologies: [
-      "JavaScript",
-      "Algorithms",
-      "Software Design",
-      "CSS3"
+      "Laravel",
+      "Bootstrap",
+      "PHP",
+      "MySQL",
+      "JavaScript"
     ],
     links: {
       github: "https://github.com/",
@@ -532,38 +560,44 @@ export const projects = [
   },
   {
     id: 4,
-    slug: "jambore-pemuda-karanganyar",
-    title: "Aplikasi Profil & Agenda Jambore Pemuda",
-    category: "UI/UX Design",
-    year: "2024",
-    description: "Konsep UI/UX aplikasi mobile untuk mempermudah delegasi Jambore Pemuda dalam mengakses jadwal kegiatan, peta lokasi, dan panduan kontingen.",
-    overview: "Dirancang berdasarkan pengalaman langsung sebagai peserta Jambore Pemuda guna mengatasi kesulitan koordinasi jadwal dan materi kegiatan di lapangan.",
-    problem: "Peserta jambore sering ketinggalan informasi jadwal dan lokasi kegiatan yang padat selama acara berlangsung.",
-    solution: "Merancang antarmuka mobile yang ringkas, jelas, dan dapat diakses dengan cepat bahkan saat sinyal terbatas.",
+    slug: "kas-buku-digital",
+    title: "Kas Buku Digital - Pembukuan Keuangan Modern",
+    category: "Web",
+    year: "2026",
+    description: "Website kas buku digital untuk pencatatan transaksi kas masuk dan keluar serta pelaporan keuangan otomatis berbasis framework Laravel dan Bootstrap.",
+    overview: "Kas Buku Digital adalah aplikasi web manajemen pembukuan keuangan modern yang dirancang untuk memudahkan pencatatan arus kas (cash flow) harian maupun bulanan secara rapi, cepat, dan akurat untuk kebutuhan usaha maupun organisasi.",
+    problem: "Pencatatan kas konvensional menggunakan buku fisik atau spreadsheet manual rentan mengalami selisih hitung, risiko kehilangan catatan transaksi, dan memakan waktu lama saat penyusunan laporan pertanggungjawaban keuangan.",
+    solution: "Mengembangkan aplikasi Kas Buku Digital berbasis Laravel dan Bootstrap dengan fitur otomasi perhitungan saldo saat ini, pencatatan transaksi pemasukan dan pengeluaran terstruktur, pencarian instan, serta ekspor cetak laporan keuangan langsung.",
     features: [
-      "Timeline agenda harian real-time",
-      "Peta lokasi perkemahan dan pos kegiatan",
-      "Direktori kontak darurat dan koordinator",
-      "Tipografi kontras tinggi yang nyaman dibaca di luar ruangan"
+      "Dashboard metrik keuangan interaktif: Saldo Terkini, Pemasukan Hari Ini & Bulan Ini, Pengeluaran Hari Ini & Bulan Ini, serta Total Pemasukan/Pengeluaran",
+      "Pencatatan data transaksi pemasukan dan pengeluaran dengan form input tervalidasi dan aman",
+      "Tabel transaksi dinamis dengan pagination, filter pencarian instan, serta aksi edit dan hapus data",
+      "Fitur Cetak Laporan Keuangan siap pakai untuk transparansi dan arsip berkala",
+      "Sistem manajemen akun pengguna dan autentikasi multi-level yang aman"
     ],
-    role: "UI/UX Designer",
-    image: "/projects/veggieneed/veggieneed-mockup.png",
+    role: "Full-Stack Web Developer",
+    image: "/projects/kas-buku/kas-buku-dashboard.jpg",
     images: [
       {
-        src: "/projects/veggieneed/veggieneed-mockup.png",
-        caption: "Mobile UI Design Prototype"
+        src: "/projects/kas-buku/kas-buku-dashboard.jpg",
+        caption: "Dashboard Utama Kas Buku - Ringkasan Saldo Terkini, Pemasukan, Pengeluaran, dan Tombol Cetak Laporan"
+      },
+      {
+        src: "/projects/kas-buku/kas-buku-transaksi.png",
+        caption: "Daftar Transaksi Pemasukan - Tabel Data Transaksi, Tambah Pemasukan, dan Opsi Aksi Edit/Hapus"
       }
     ],
     technologies: [
-      "Figma",
-      "UI/UX Design",
-      "Prototyping",
-      "Mobile UX"
+      "Laravel",
+      "Bootstrap",
+      "PHP",
+      "MySQL",
+      "JavaScript"
     ],
     links: {
-      github: "",
+      github: "https://github.com/",
       demo: ""
     },
-    featured: false
+    featured: true
   }
 ];

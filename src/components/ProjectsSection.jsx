@@ -17,7 +17,7 @@ function getCategoryBadgeClass(category) {
   }
 }
 
-const categories = ['All', 'Web', 'UI/UX Design', 'Machine Learning', 'IoT'];
+const categories = ['All', 'Web'];
 const INITIAL_PROJECTS_COUNT = 6;
 
 export default function ProjectsSection() {
@@ -69,7 +69,7 @@ export default function ProjectsSection() {
       </div>
 
       {/* Projects Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
         {displayedProjects.map((project, idx) => (
           <div
             key={project.id || project.slug}

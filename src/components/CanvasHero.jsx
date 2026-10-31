@@ -1,7 +1,7 @@
 import React, { lazy, Suspense, useEffect, useRef, useState } from 'react';
 
 const Lanyard = lazy(() => import('./Lanyard'));
-const TOTAL_FRAMES = 214;
+const TOTAL_FRAMES = 108;
 const getFrameUrl = (idx) => `/frames/frame_${idx.toString().padStart(5, '0')}.webp`;
 
 export default function CanvasHero() {
@@ -9,7 +9,7 @@ export default function CanvasHero() {
   const containerRef = useRef(null);
   const scrollIndicatorRef = useRef(null);
   const framesRef = useRef([]);
-  const loadedFlagsRef = useRef(Array(215).fill(false));
+  const loadedFlagsRef = useRef(Array(109).fill(false));
   const currentFrameRef = useRef(1);
   const targetFrameRef = useRef(1);
   const drawnFrameRef = useRef(-1);
@@ -76,7 +76,7 @@ export default function CanvasHero() {
     ctx.fillStyle = '#fbf9f8';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    const frameCache = Array(215);
+    const frameCache = Array(TOTAL_FRAMES + 1);
     framesRef.current = frameCache;
 
     const drawFrame = (frameNum) => {
@@ -113,7 +113,7 @@ export default function CanvasHero() {
         img.fetchPriority = 'high';
       }
       img.src = getFrameUrl(frameIdx);
-      img.onload = () => {
+      const onImageReady = () => {
         frameCache[frameIdx] = img;
         loadedFlagsRef.current[frameIdx] = true;
         if (frameIdx === 1 && drawnFrameRef.current === -1) {
@@ -123,11 +123,15 @@ export default function CanvasHero() {
           drawFrame(frameIdx);
         }
       };
+      img.onload = onImageReady;
+      if (img.complete && img.naturalWidth > 0) {
+        onImageReady();
+      }
       frameCache[frameIdx] = img;
     };
 
     // Preload critical initial and ending frames
-    [1, 2, 3, 4, 5, 205, 208, 210, 211, 212, 213, 214].forEach((f) => loadSingleFrame(f, true));
+    [1, 2, 3, 4, 5, 95, 100, 104, 106, 107, 108].forEach((f) => loadSingleFrame(f, true));
     for (let f = 10; f < TOTAL_FRAMES; f += 5) {
       loadSingleFrame(f, false);
     }
@@ -191,8 +195,8 @@ export default function CanvasHero() {
       }
 
       let frameIdx = 1;
-      if (progress <= 0.88) {
-        frameIdx = 1 + Math.floor((progress / 0.88) * (TOTAL_FRAMES - 1));
+      if (progress <= 0.85) {
+        frameIdx = 1 + Math.floor((progress / 0.85) * (TOTAL_FRAMES - 1));
       } else {
         frameIdx = TOTAL_FRAMES;
       }
@@ -202,7 +206,7 @@ export default function CanvasHero() {
         triggerRender();
       }
 
-      if (frameIdx >= 140 || progress >= 0.55) {
+      if (frameIdx >= 78 || progress >= 0.60) {
         setShowLanyard(true);
       } else {
         setShowLanyard(false);
@@ -243,9 +247,19 @@ export default function CanvasHero() {
     <section id="home">
       <section className="h-[300vh] w-full relative z-40 lego-dot-bg" ref={containerRef}>
         <div className="sticky top-0 h-screen w-full overflow-hidden flex flex-col items-center justify-center lego-dot-bg">
+          {/* Standout initial hero image - instant paint on first load */}
+          <img
+            src="/frames/frame_00001.webp"
+            alt="Hero Spider-Man Animation"
+            fetchPriority="high"
+            loading="eager"
+            decoding="async"
+            className="w-full h-full object-cover object-center pointer-events-none translate-y-8 md:translate-y-12 absolute inset-0 select-none z-0"
+          />
+
           {/* Canvas frame animation */}
           <canvas
-            className="w-full h-full object-cover object-center pointer-events-none translate-y-8 md:translate-y-12"
+            className="w-full h-full object-cover object-center pointer-events-none translate-y-8 md:translate-y-12 relative z-10"
             ref={canvasRef}
           />
 
@@ -253,7 +267,7 @@ export default function CanvasHero() {
           <div
             className={`absolute inset-0 z-50 flex flex-col items-center justify-center transition-all duration-350 ease-out ${
               showLanyard
-                ? 'opacity-100 translate-y-8 md:translate-y-12 scale-100 pointer-events-auto'
+                ? 'opacity-100 translate-y-0 md:-translate-y-2 scale-100 pointer-events-auto'
                 : 'opacity-0 -translate-y-36 scale-95 pointer-events-none'
             }`}
           >
