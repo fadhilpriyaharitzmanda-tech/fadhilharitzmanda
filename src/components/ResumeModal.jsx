@@ -12,12 +12,16 @@ export default function ResumeModal({ isOpen, onClose }) {
     if (isOpen) {
       window.addEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'hidden';
+      document.body.classList.add('modal-open');
+      window.dispatchEvent(new CustomEvent('modal-state-change', { detail: { isOpen: true } }));
       if (window.lenis) window.lenis.stop();
     }
 
     return () => {
       window.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = 'unset';
+      document.body.classList.remove('modal-open');
+      window.dispatchEvent(new CustomEvent('modal-state-change', { detail: { isOpen: false } }));
       if (window.lenis) window.lenis.start();
     };
   }, [isOpen, onClose]);

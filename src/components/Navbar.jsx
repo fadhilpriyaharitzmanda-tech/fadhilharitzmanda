@@ -84,17 +84,24 @@ export default function Navbar() {
   return (
     <>
       <header className="fixed top-0 w-full z-50 bg-surface border-b-4 border-on-surface">
-        <div className="flex justify-between items-center w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16 py-4">
+        <div className="flex justify-between items-center w-full max-w-[1600px] mx-auto px-4 sm:px-8 md:px-12 lg:px-16 py-3 sm:py-4">
           {/* Logo */}
           <a
-            className="relative inline-flex items-center text-headline-md font-headline-md font-black tracking-tighter text-primary group select-none cursor-pointer"
+            className="flex flex-col sm:flex-row sm:items-center gap-0 sm:gap-2 text-primary group select-none cursor-pointer"
             href="#home"
             onClick={(e) => handleNavClick(e, '#home')}
           >
-            <span>FADHIL HARITZMANDA</span>
-            <span className="relative -top-2.5 ml-1 text-[11px] font-label-caps font-bold px-1.5 py-0.5 bg-brick-yellow text-on-surface border-2 border-on-surface shadow-[2px_2px_0px_0px_#1a1c1c] group-hover:scale-110 group-hover:-rotate-6 transition-all duration-200 uppercase leading-none">
-              . dev
+            <span className="font-headline-md font-black text-xl sm:text-headline-md tracking-tighter leading-none">
+              FADHIL
             </span>
+            <div className="flex items-center gap-1.5 leading-none mt-0.5 sm:mt-0">
+              <span className="font-headline-md font-black text-xl sm:text-headline-md tracking-tighter">
+                HARITZMANDA
+              </span>
+              <span className="inline-block px-1.5 py-0.5 text-[10px] sm:text-[11px] font-label-caps font-bold bg-brick-yellow text-on-surface border-2 border-on-surface shadow-[2px_2px_0px_0px_#1a1c1c] group-hover:scale-110 group-hover:-rotate-6 transition-all duration-200 uppercase leading-none">
+                .DEV
+              </span>
+            </div>
           </a>
 
           {/* Desktop Nav Items */}
@@ -135,11 +142,11 @@ export default function Navbar() {
           {/* Mobile Menu Button */}
           <button
             type="button"
-            className="md:hidden text-on-surface cursor-pointer"
+            className="md:hidden text-on-surface cursor-pointer p-1.5 -mr-1.5 flex items-center justify-center hover:bg-surface-container rounded transition-colors"
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
             aria-label="Toggle Menu"
           >
-            <span className="material-symbols-outlined">{mobileMenuOpen ? 'close' : 'menu'}</span>
+            <span className="material-symbols-outlined text-2xl">{mobileMenuOpen ? 'close' : 'menu'}</span>
           </button>
         </div>
 

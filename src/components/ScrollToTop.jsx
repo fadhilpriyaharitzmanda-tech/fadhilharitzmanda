@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 
 export default function ScrollToTop() {
   const [visible, setVisible] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     let ticking = false;
@@ -15,10 +16,40 @@ export default function ScrollToTop() {
       }
     };
 
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    handleScroll();
+    const checkModalState = () => {
+      const hasModal =
+        document.body.classList.contains('modal-open') ||
+        document.body.style.overflow === 'hidden' ||
+        document.querySelector('[data-lenis-prevent="true"]') !== null;
+      setIsModalOpen(hasModal);
+    };
 
-    return () => window.removeEventListener('scroll', handleScroll);
+    const handleModalChange = (e) => {
+      if (e.detail && typeof e.detail.isOpen === 'boolean') {
+        setIsModalOpen(e.detail.isOpen);
+      } else {
+        checkModalState();
+      }
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    window.addEventListener('modal-state-change', handleModalChange);
+    handleScroll();
+    checkModalState();
+
+    const observer = new MutationObserver(checkModalState);
+    observer.observe(document.body, {
+      attributes: true,
+      attributeFilter: ['class', 'style'],
+      childList: true,
+      subtree: true,
+    });
+
+    return () => {
+      window.removeEventListener('scroll', handleScroll);
+      window.removeEventListener('modal-state-change', handleModalChange);
+      observer.disconnect();
+    };
   }, []);
 
   const scrollToTop = () => {
@@ -29,12 +60,14 @@ export default function ScrollToTop() {
     }
   };
 
+  const isShown = visible && !isModalOpen;
+
   return (
     <div
-      className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 z-40 transition-all duration-300 ease-out ${
-        visible
+      className={`fixed bottom-6 right-6 md:bottom-8 md:right-8 z-50 transition-all duration-500 ease-in-out ${
+        isShown
           ? 'opacity-100 translate-y-0 pointer-events-auto scale-100'
-          : 'opacity-0 translate-y-8 pointer-events-none scale-90'
+          : 'opacity-0 translate-y-20 pointer-events-none scale-90'
       }`}
     >
       <button
@@ -63,4 +96,3 @@ export default function ScrollToTop() {
     </div>
   );
 }
-

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Design Assets — Fadhil Haritzmanda</title>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=VT323&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --red:#b3121a;--yellow:#ffd500;--ink:#141414;--paper:#fafafa;--blue:#1f4fb4;--green:#1a9e4a;
+  --bg:#ececec;--fg:#141414;--muted:#555;
+  --pix:'Pixelify Sans',ui-monospace,monospace;--btn:'VT323',monospace;--body:'Space Grotesk',system-ui,sans-serif;
+  box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#1b1b1b;--fg:#f2f2f2;--muted:#aaa}}
+*,*::before,*::after{box-sizing:inherit}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.5}
+main{max-width:1080px;margin:0 auto;padding:40px 5vw 80px}
+h1{font-family:var(--btn);font-weight:400;font-size:3rem;margin:0;color:var(--red);line-height:1}
+.lead{color:var(--muted);margin:6px 0 36px}
+h2{font-family:var(--pix);font-size:1.3rem;margin:44px 0 14px;border-bottom:4px solid var(--fg);padding-bottom:6px}
+.board{background:var(--paper);color:var(--ink);border:4px solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:26px;display:grid;gap:26px 30px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));align-items:end}
+.dots{background-image:radial-gradient(#cfcfcf 2px,transparent 2px);background-size:26px 26px}
+.item{display:flex;flex-direction:column;gap:12px;align-items:flex-start}
+.cap{font-size:.78rem;color:#555;font-family:var(--body)}
+.cap b{color:var(--ink)}
+/* buttons */
+.nav{font-family:var(--pix);font-size:1.05rem;color:var(--ink);padding:8px 16px;border:3px solid transparent;background:none}
+.nav.on{background:var(--yellow);border-color:var(--ink);box-shadow:4px 4px 0 var(--ink);font-weight:700}
+.btn{position:relative;font-family:var(--btn);font-size:1.7rem;line-height:1;color:#fff;background:var(--red);border:4px solid var(--ink);box-shadow:6px 6px 0 var(--ink);padding:8px 24px;cursor:pointer;display:inline-block}
+.btn.y{background:var(--yellow);color:var(--ink)}
+.btn.studs::before{content:"";position:absolute;top:-11px;left:18%;width:12px;height:12px;border-radius:50%;background:var(--red);border:3px solid var(--ink);box-shadow:calc(var(--w,70px)) 0 0 -0px var(--red),0 0 0 0 transparent}
+.btn.studs{--w:0px}
+.studrow{position:absolute;top:-11px;left:0;right:0;display:flex;justify-content:space-around;padding:0 12%}
+.studrow i{width:12px;height:12px;border-radius:50%;background:var(--red);border:3px solid var(--ink)}
+.btn.y .studrow i{background:var(--yellow)}
+.btn:hover{transform:translate(3px,3px);box-shadow:3px 3px 0 var(--ink)}
+.btn:focus-visible{outline:3px solid var(--blue);outline-offset:4px}
+.top{width:70px;padding:6px 0 8px;text-align:center;font-family:var(--btn);font-size:1.2rem;background:var(--yellow);border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);position:relative;margin-top:14px}
+.top::before,.top::after{content:"";position:absolute;top:-14px;width:18px;height:12px;background:var(--yellow);border:3px solid var(--ink);border-bottom:0;border-radius:6px 6px 0 0}
+.top::before{left:8px}.top::after{right:8px}
+.top b{display:block;font-size:1.7rem;line-height:1}
+.fab{display:inline-flex;align-items:center;gap:10px;background:#fff;border:3px solid var(--ink);border-radius:999px;box-shadow:5px 5px 0 var(--ink);padding:10px 16px 10px 20px;font-weight:700;color:var(--ink)}
+.fab em{font-style:normal;background:#e6e6e6;border-radius:999px;padding:0 9px;font-size:.85rem}
+/* chips & labels */
+.status{font-family:var(--btn);font-size:1.4rem;background:var(--yellow);border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:4px 16px;display:inline-flex;align-items:center;gap:10px}
+.status i{width:14px;height:14px;border-radius:50%;background:#c77a00;border:2px solid var(--ink)}
+.tag{font-family:var(--pix);font-size:.9rem;border:2px solid var(--ink);background:#fff;padding:5px 16px}
+.float{font-family:var(--btn);font-size:1.35rem;padding:6px 20px;border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);color:#fff;background:var(--red)}
+.float.y{background:var(--yellow);color:var(--ink)}
+.logo{font-family:var(--btn);font-size:2.3rem;color:var(--red);line-height:1}
+.logo small{font-size:.9rem;background:var(--yellow);color:var(--ink);border:2px solid var(--ink);padding:0 6px;vertical-align:top;margin-left:4px}
+/* cards */
+.card{background:#fff;border:4px solid var(--ink);box-shadow:8px 8px 0 var(--ink);padding:18px;font-size:.9rem}
+.name{font-family:var(--body);font-weight:700;font-size:2.3rem;line-height:1;letter-spacing:-.04em;margin:0}
+.name span{color:var(--red);display:block}
+.frame{position:relative;width:170px;height:130px;border:5px solid var(--ink);background:linear-gradient(135deg,#b8c4cf,#7e8b98)}
+.frame i{position:absolute;width:12px;height:12px;border-radius:50%;border:3px solid var(--ink)}
+.sw{height:64px;border:3px solid var(--ink);width:100%;box-shadow:4px 4px 0 var(--ink)}
+.type{font-size:.85rem;color:#444}
+/* mascot stage */
+.stage{position:relative;height:200px;overflow:hidden;background:var(--paper);border:4px solid var(--ink);box-shadow:8px 8px 0 var(--ink);background-image:linear-gradient(#e4e4e4 1px,transparent 1px),linear-gradient(90deg,#e4e4e4 1px,transparent 1px);background-size:28px 28px}
+.stage::after{content:"";position:absolute;left:0;right:0;bottom:0;height:10px;background:var(--ink)}
+.mf{position:absolute;bottom:10px;width:64px;height:96px}
+.p1{left:12%;transform:translateY(100%);animation:peek 5s ease-in-out infinite}
+.p2{left:0;animation:walk 9s linear infinite}
+.p3{right:14%;animation:sway 2.4s ease-in-out infinite;transform-origin:50% 100%}
+.mag{position:absolute;right:calc(14% + 52px);bottom:92px;font-size:1.5rem;animation:sway 2.4s ease-in-out infinite reverse}
+@keyframes peek{0%,15%{transform:translateY(100%)}30%,60%{transform:translateY(8%)}75%,100%{transform:translateY(100%)}}
+@keyframes walk{0%{left:-10%;transform:scaleX(1)}49%{transform:scaleX(1)}50%{left:70%;transform:scaleX(-1)}99%{transform:scaleX(-1)}100%{left:-10%;transform:scaleX(1)}}
+@keyframes sway{0%,100%{transform:rotate(-4deg)}50%{transform:rotate(4deg)}}
+.mf svg{width:100%;height:100%;display:block;overflow:visible}
+.lean{transform-box:fill-box;transform-origin:50% 100%;transition:transform .15s}
+.p2 .bob{animation:bob .5s steps(2) infinite}
+.eye{fill:#fff;stroke:#141414;stroke-width:1.6;transform-box:fill-box;transform-origin:center;transition:transform .12s}
+.pu{fill:#141414;transition:r .12s}
+.brow{fill:none;stroke:#141414;stroke-width:2.2;stroke-linecap:round;transform-box:fill-box;transform-origin:center;transition:transform .12s}
+.mo{fill:none;stroke:#141414;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
+.mo.fill{fill:#141414}
+.fear{display:none}
+.scared .fear{display:inline}
+.scared .calm{display:none}
+.scared .eye{transform:scale(1.3)}
+.scared .pu{r:1.5px}
+.scared .bl{transform:translateY(-2.5px) rotate(-22deg)}
+.scared .br{transform:translateY(-2.5px) rotate(22deg)}
+.scared .bob{animation:none}
+.scared .shake{animation:shiver .09s linear infinite}
+.p1.scared{animation:none;transform:translateY(58%);transition:transform .4s .25s ease-in}
+.p2.scared{animation-play-state:paused}
+@keyframes shiver{0%,100%{transform:translateX(-1.3px)}50%{transform:translateX(1.3px)}}
+@keyframes bob{50%{transform:translateY(-4px)}}
+@media (prefers-reduced-motion:reduce){.p1,.p2,.p3,.mag,.bob,.shake{animation:none!important}.p1{transform:translateY(8%)}.p2{left:40%}}
+ol{padding-left:1.1rem;color:var(--muted)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="mf" viewBox="0 0 60 92">
+    <g stroke="#141414" stroke-width="3" stroke-linejoin="round">
+      <rect x="22" y="2" width="16" height="6" rx="2" fill="var(--head)"/>
+      <rect x="12" y="7" width="36" height="26" rx="7" fill="var(--head)"/>
+      <rect x="2" y="37" width="10" height="26" rx="4" fill="var(--torso)"/>
+      <rect x="48" y="37" width="10" height="26" rx="4" fill="var(--torso)"/>
+      <path d="M10 35h40l2 28H8z" fill="var(--torso)"/>
+      <rect x="9" y="63" width="21" height="26" rx="2" fill="var(--legs)"/>
+      <rect x="30" y="63" width="21" height="26" rx="2" fill="var(--legs)"/>
+    </g>
+  </symbol>
+</svg>
+<main>
+  <h1>DESIGN ASSETS</h1>
+  <p class="lead">Fadhil Priya Haritzmanda — gaya neo-brutalist bertema LEGO: border hitam tebal, bayangan keras tanpa blur, dan stud bulat.</p>
+
+  <h2>Warna</h2>
+  <div class="board">
+    <div class="item"><div class="sw" style="background:#b3121a"></div><div class="cap"><b>Brick Red</b> #B3121A — CTA, nama belakang</div></div>
+    <div class="item"><div class="sw" style="background:#ffd500"></div><div class="cap"><b>Stud Yellow</b> #FFD500 — menu aktif, badge</div></div>
+    <div class="item"><div class="sw" style="background:#141414"></div><div class="cap"><b>Ink</b> #141414 — border &amp; bayangan</div></div>
+    <div class="item"><div class="sw" style="background:#fafafa"></div><div class="cap"><b>Plate White</b> #FAFAFA — latar (titik-titik)</div></div>
+    <div class="item"><div class="sw" style="background:#1f4fb4"></div><div class="cap"><b>Brick Blue</b> #1F4FB4 — stud bingkai foto</div></div>
+    <div class="item"><div class="sw" style="background:#1a9e4a"></div><div class="cap"><b>Brick Green</b> #1A9E4A — stud bingkai foto</div></div>
+  </div>
+
+  <h2>Tipografi</h2>
+  <div class="board" style="grid-template-columns:repeat(auto-fit,minmax(260px,1fr))">
+    <div class="item"><div class="logo">FADHIL HARITZMANDA<small>.DEV</small></div><div class="cap"><b>Logo &amp; tombol</b> — font pixel kondensed (VT323)</div></div>
+    <div class="item"><div class="nav on">About Me</div><div class="cap"><b>Menu &amp; tag</b> — Pixelify Sans</div></div>
+    <div class="item"><p class="name">FADHIL PRIYA<span>HARITZMANDA</span></p><div class="cap"><b>Judul hero</b> — sans bold rapat, hitam + merah</div></div>
+    <div class="item"><div class="type">Saya Fadhil, seorang pelajar RPL yang tertarik pada teknologi informasi.</div><div class="cap"><b>Isi teks</b> — Space Grotesk</div></div>
+  </div>
+
+  <h2>Tombol</h2>
+  <div class="board dots">
+    <div class="item"><span class="nav">Home</span><div class="cap"><b>Nav default</b></div></div>
+    <div class="item"><span class="nav on">About Me</span><div class="cap"><b>Nav aktif</b> — kuning, border, bayangan</div></div>
+    <div class="item"><span class="btn"><span class="studrow"><i></i><i></i><i></i></span>&#8595; DOWNLOAD CV</span><div class="cap"><b>Primary CTA</b> — merah + 3 stud</div></div>
+    <div class="item"><span class="btn"><span class="studrow"><i></i><i></i><i></i></span>VIEW PROJECTS &rarr;</span><div class="cap"><b>CTA hero</b></div></div>
+    <div class="item"><span class="btn y"><span class="studrow"><i></i><i></i><i></i></span>HUBUNGI SAYA</span><div class="cap"><b>Secondary</b> — kuning (usulan)</div></div>
+    <div class="item"><div class="top"><b>&uarr;</b>TOP</div><div class="cap"><b>Back to top</b> — balok kuning</div></div>
+    <div class="item"><span class="fab">&#9998; Guestbook <em>16</em></span><div class="cap"><b>Floating button</b> + penghitung</div></div>
+  </div>
+
+  <h2>Badge, chip &amp; label</h2>
+  <div class="board dots">
+    <div class="item"><span class="status"><i></i>STATUS: READY TO BUILD</span><div class="cap"><b>Status badge</b></div></div>
+    <div class="item"><span class="tag">Young Developer</span><div class="cap"><b>Skill chip</b> — border tipis</div></div>
+    <div class="item"><span class="float y">UI/UX &amp; DEV</span><div class="cap"><b>Label melayang</b> — kuning</div></div>
+    <div class="item"><span class="float">SOFTWARE &amp; CYBER</span><div class="cap"><b>Label melayang</b> — merah</div></div>
+  </div>
+
+  <h2>Kartu &amp; bingkai</h2>
+  <div class="board dots">
+    <div class="item"><div class="card">Kartu putih dengan border 4px dan bayangan keras 8px.</div><div class="cap"><b>Card teks</b></div></div>
+    <div class="item"><div class="frame"><i style="background:#ffd500;left:-9px;top:-9px"></i><i style="background:#ffd500;left:70px;top:-9px"></i><i style="background:#1f4fb4;left:-9px;top:50px"></i><i style="background:#1a9e4a;right:-9px;top:50px"></i><i style="background:#b3121a;left:70px;bottom:-9px"></i></div><div class="cap"><b>Bingkai foto</b> — stud warna-warni di tepi</div></div>
+  </div>
+
+  <h2>Animasi karakter LEGO (konsep)</h2>
+  <div class="stage" role="img" aria-label="Tiga minifigure LEGO: satu mengintip, satu berjalan, satu bergoyang membawa kaca pembesar">
+    <div class="mf p1" style="--head:#ffd500;--torso:#b3121a;--legs:#1f4fb4"><svg viewBox="0 0 60 92"><g class="bob"><g class="lean"><g class="shake"><use href="#mf"/>
+<g class="face" data-max="2"><ellipse class="eye" cx="24" cy="19" rx="4.6" ry="4.6"/><ellipse class="eye" cx="36" cy="19" rx="4.6" ry="4.6"/><circle class="pu" cx="24" cy="19" r="2.3"/><circle class="pu" cx="36" cy="19" r="2.3"/>
+<path class="brow bl" d="M19.5 12h9"/><path class="brow br" d="M31.5 12h9"/>
+<path class="mo calm" d="M24 26.5q6 4.5 12 0"/><ellipse class="mo fill fear" cx="30" cy="27.8" rx="3.2" ry="3.9"/>
+<path class="fear" d="M50 9q-3.5 5.5 0 8q3.5-2.5 0-8z" fill="#6fd0ff" stroke="#141414" stroke-width="1.3"/></g></g></g></g></svg></div>
+    <div class="mf p2" style="--head:#ffd500;--torso:#1a9e4a;--legs:#141414"><svg viewBox="0 0 60 92"><g class="bob"><g class="lean"><g class="shake"><use href="#mf"/>
+<g class="face" data-max="2.6"><circle class="eye" cx="23.5" cy="19" r="5.8"/><circle class="eye" cx="36.5" cy="19" r="5.8"/><path class="mo" d="M29.3 18.5h1.4"/><circle class="pu" cx="23.5" cy="19" r="2.2"/><circle class="pu" cx="36.5" cy="19" r="2.2"/>
+<path class="brow bl" d="M17.5 10q5.5-2.5 11 0"/><path class="brow br" d="M31.5 10q5.5-2.5 11 0"/>
+<path class="mo calm" d="M25 27q6 2.5 12-1.5"/><path class="mo fear" d="M23 28l2.5-2.2 2.5 2.2 2.5-2.2 2.5 2.2 2.5-2.2 2.5 2.2"/>
+<path class="fear" d="M10 9q-3.5 5.5 0 8q3.5-2.5 0-8z" fill="#6fd0ff" stroke="#141414" stroke-width="1.3"/></g></g></g></g></svg></div>
+    <div class="mf p3" style="--head:#ffd500;--torso:#ffd500;--legs:#b3121a"><svg viewBox="0 0 60 92"><g class="bob"><g class="lean"><g class="shake"><use href="#mf"/>
+<g class="face" data-max="1.8"><ellipse class="eye" cx="24" cy="19" rx="3.8" ry="5.2"/><ellipse class="eye" cx="36" cy="19" rx="3.8" ry="5.2"/><circle class="pu" cx="24" cy="19.5" r="2.1"/><circle class="pu" cx="36" cy="19.5" r="2.1"/>
+<path class="brow bl" style="stroke-width:3" d="M19 12.5l9 1.5"/><path class="brow br" style="stroke-width:3" d="M32 14l9-1.5"/>
+<path class="mo calm" d="M25 27.5h10"/><rect class="mo fear" x="24" y="25.5" width="12" height="5.5" rx="1.5" fill="#fff"/><path class="mo fear" style="stroke-width:1.4" d="M28 25.5v5.5M32 25.5v5.5"/>
+<path class="fear" d="M50 9q-3.5 5.5 0 8q3.5-2.5 0-8z" fill="#6fd0ff" stroke="#141414" stroke-width="1.3"/></g></g></g></g></svg></div>
+    <span class="mag" aria-hidden="true">&#128269;</span>
+  </div>
+  <p class="lead" style="margin-top:20px">Tiga karakter dengan wajah berbeda: mata bulat, berkacamata, dan alis tebal. Matanya mengikuti kursor. Dekatkan kursor ke salah satunya dan dia akan gemetar, melebarkan mata, lalu menjauh. Yang mengintip akan menunduk bersembunyi.</p>
+<script>
+(()=>{
+const stage=document.querySelector('.stage');
+const chars=[...stage.querySelectorAll('.mf')].map(el=>({el,lean:el.querySelector('.lean'),pu:[...el.querySelectorAll('.pu')],max:+el.querySelector('.face').dataset.max}));
+let px=null,py=null;const R=120;
+function update(){
+  const s=stage.getBoundingClientRect();
+  for(const c of chars){
+    const e=c.el;
+    const cx=s.left+e.offsetLeft+e.offsetWidth/2, cy=s.top+e.offsetTop+e.offsetHeight*0.25;
+    let fl=1;try{fl=new DOMMatrix(getComputedStyle(e).transform).a<0?-1:1}catch(_){}
+    let dx=0,dy=0,d=1e9;
+    if(px!==null){dx=px-cx;dy=py-cy;d=Math.hypot(dx,dy)}
+    const scared=d<R;
+    e.classList.toggle('scared',scared);
+    const k=Math.min(1,d/60), n=d||1;
+    const ox=px===null?0:dx/n*c.max*k*fl, oy=px===null?0:dy/n*c.max*k;
+    c.pu.forEach(p=>{p.style.transform='translate('+ox+'px,'+oy+'px)'});
+    c.lean.style.transform=scared?'rotate('+(-Math.sign(dx)*fl*9)+'deg)':'';
+  }
+}
+addEventListener('pointermove',e=>{px=e.clientX;py=e.clientY});
+addEventListener('pointerup',e=>{if(e.pointerType==='touch'){px=py=null}});
+document.documentElement.addEventListener('pointerleave',()=>{px=py=null});
+setInterval(update,70);
+})();
+</script>
+</main>
+</body>
+</html>

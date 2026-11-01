@@ -13,6 +13,7 @@ import ProjectsSection from './components/ProjectsSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import ScrollToTop from './components/ScrollToTop';
+import LegoMinifiguresStage from './components/LegoMinifiguresStage';
 
 export default function App() {
   useLenis();
@@ -36,6 +37,7 @@ export default function App() {
       </main>
       <Footer />
       <ScrollToTop />
+      <LegoMinifiguresStage />
     </>
   );
 }
