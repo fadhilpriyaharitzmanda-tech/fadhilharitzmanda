@@ -12,7 +12,7 @@ import SkillsSection from './components/SkillsSection';
 import ProjectsSection from './components/ProjectsSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
-import ScrollToTop from './components/ScrollToTop';
+import GuestbookDrawer from './components/GuestbookDrawer';
 import LegoMinifiguresStage from './components/LegoMinifiguresStage';
 
 export default function App() {
@@ -36,7 +36,7 @@ export default function App() {
         <ContactSection />
       </main>
       <Footer />
-      <ScrollToTop />
+      <GuestbookDrawer />
       <LegoMinifiguresStage />
     </>
   );

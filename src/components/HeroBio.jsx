@@ -1,6 +1,7 @@
 import React, { useRef } from 'react';
 import { personalInfo } from '../data/portfolioData';
 import LegoCar from './LegoCar';
+import WeatherTimeBadge from './WeatherTimeBadge';
 
 const roleHoverStyles = [
   { hover: 'hover:bg-[#0055A4] hover:text-white hover:-rotate-3 hover:-translate-y-1.5 hover:shadow-[4px_4px_0px_0px_#1a1c1c]' },
@@ -164,16 +165,8 @@ export default function HeroBio() {
             </span>
           </div>
 
-          {/* Floating Badge 2: Bottom-Left SOFTWARE & CYBER */}
-          <div className="absolute bottom-6 left-2 sm:-left-3 md:-left-6 bg-primary text-on-primary px-3 sm:px-4 py-2 sm:py-2.5 border-3 sm:border-4 border-on-surface brick-shadow flex items-center gap-2 font-label-caps text-[11px] sm:text-label-caps font-bold animate-float-badge-2 hover:scale-105 transition-transform duration-200 cursor-default z-30 select-none">
-            <div className="absolute -top-2 left-0 w-full flex justify-around px-2 pointer-events-none">
-              <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-primary border-2 border-on-surface" />
-              <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-primary border-2 border-on-surface" />
-              <span className="w-2 sm:w-2.5 h-2 sm:h-2.5 rounded-full bg-primary border-2 border-on-surface" />
-            </div>
-            <span className="material-symbols-outlined text-[18px] sm:text-[20px]">terminal</span>
-            <span>SOFTWARE & CYBER</span>
-          </div>
+          {/* Floating Badge 2: Live Time & Weather Widget (HH:mm WIB | O 22°C) */}
+          <WeatherTimeBadge />
         </div>
       </div>
     </section>
