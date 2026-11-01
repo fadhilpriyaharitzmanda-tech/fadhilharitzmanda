@@ -1,7 +1,16 @@
 import { createClient } from '@supabase/supabase-js';
 
-const rawUrl = (import.meta.env.VITE_SUPABASE_URL || '').trim();
-const rawKey = (import.meta.env.VITE_SUPABASE_ANON_KEY || '').trim();
+const rawUrl = (
+  import.meta.env.VITE_SUPABASE_URL ||
+  import.meta.env.SUPABASE_URL ||
+  ''
+).trim();
+
+const rawKey = (
+  import.meta.env.VITE_SUPABASE_ANON_KEY ||
+  import.meta.env.SUPABASE_ANON_KEY ||
+  ''
+).trim();
 
 // Normalize URL: remove trailing /rest/v1, /rest/v1/, or trailing slashes if user pasted REST endpoint
 export const normalizeSupabaseUrl = (url) => {
