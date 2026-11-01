@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LEGO Guestbook Drawer</title>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=VT323&family=Space+Grotesk:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#b3121a;--yellow:#ffd500;--ink:#141414;--paper:#fafafa;--blue:#1f4fb4;--green:#1a9e4a;
+--pix:'Pixelify Sans',ui-monospace,monospace;--btn:'VT323',monospace;--body:'Space Grotesk',system-ui,sans-serif;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+html,body{height:100%}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--body);line-height:1.4;background-image:radial-gradient(#d4d4d4 2px,transparent 2px);background-size:26px 26px}
+.st{position:relative}
+.st::before{content:"";position:absolute;left:10px;right:10px;top:-11px;height:11px;pointer-events:none;background:radial-gradient(circle at 50% 100%,var(--sc,#fff) 0 4px,#141414 4px 7px,transparent 7.2px) 0 0/28px 11px repeat-x}
+/* fake portfolio behind */
+.nav{padding:calc(16px + env(safe-area-inset-top,0px)) 5vw 14px;background:var(--paper);border-bottom:4px solid var(--ink);font-family:var(--btn);font-size:2.2rem;color:var(--red);line-height:1}
+.hero{padding:6vw 5vw}
+.hero h1{font-size:clamp(2.6rem,9vw,6rem);line-height:.95;margin:0;letter-spacing:-.04em}
+.hero h1 span{color:var(--red);display:block}
+.hero p{max-width:40ch;margin-top:18px}
+.fab{position:fixed;right:20px;bottom:calc(20px + env(safe-area-inset-bottom,0px));--sc:var(--yellow);display:flex;align-items:center;gap:10px;font-family:var(--btn);font-size:1.5rem;line-height:1;background:var(--yellow);color:var(--ink);border:4px solid var(--ink);box-shadow:5px 5px 0 var(--ink);padding:10px 16px;cursor:pointer}
+.fab em{font-style:normal;background:var(--ink);color:var(--yellow);padding:0 8px}
+.fab:hover{transform:translate(3px,3px);box-shadow:2px 2px 0 var(--ink)}
+button:focus-visible,textarea:focus-visible{outline:3px solid var(--blue);outline-offset:3px}
+/* drawer */
+.ov{position:fixed;inset:0;background:#0000006e;backdrop-filter:blur(4px);opacity:0;pointer-events:none;transition:opacity .25s;z-index:20}
+.ov.open{opacity:1;pointer-events:auto}
+.dr{position:fixed;top:0;right:0;bottom:0;width:min(480px,100%);height:100dvh;background:var(--paper);border-left:4px solid var(--ink);display:flex;flex-direction:column;transform:translateX(100%);transition:transform .3s cubic-bezier(.2,.8,.2,1);z-index:30}
+.dr.open{transform:none}
+.hd{display:flex;align-items:center;gap:12px;padding:calc(16px + env(safe-area-inset-top,0px)) 16px 14px;border-bottom:4px solid var(--ink);background:#fff}
+.logo{width:42px;height:42px;background:var(--ink);color:var(--yellow);font-family:var(--btn);font-size:1.5rem;display:grid;place-items:center;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--red);flex:none}
+.ttl{font-family:var(--btn);font-size:2.6rem;line-height:1;color:var(--red);text-shadow:2px 2px 0 #00000022}
+.live{font-family:var(--btn);font-size:1rem;background:var(--green);color:#fff;border:2px solid var(--ink);padding:0 8px;vertical-align:middle;margin-left:6px}
+.sub{font-size:.8rem;color:#555}
+.x{margin-left:auto;font-family:var(--btn);font-size:1.2rem;background:#fff;border:3px solid var(--ink);box-shadow:3px 3px 0 var(--ink);padding:4px 12px;cursor:pointer;color:var(--ink)}
+.auth{padding:16px 16px 14px;border-bottom:4px solid var(--ink);background:var(--paper)}
+.auth h3{margin:0 0 10px;font-family:var(--pix);font-size:1rem}
+.lg{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+.ob{--sc:#1c1c1c;font-family:var(--btn);font-size:1.3rem;line-height:1;padding:10px 6px;border:4px solid var(--ink);box-shadow:4px 4px 0 var(--ink);cursor:pointer;color:#fff;background:#1c1c1c;margin-top:8px}
+.ob.g{background:#fff;color:var(--ink);--sc:#fff}
+.ob i{font-style:normal;font-family:var(--pix);font-size:.8rem;font-weight:700;margin-right:8px;border:2px solid currentColor;padding:0 4px}
+.ob:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+.meb{display:flex;align-items:center;gap:10px;font-family:var(--pix)}
+.lo{margin-left:auto;font-family:var(--pix);font-size:.85rem;background:none;border:0;text-decoration:underline;cursor:pointer;color:var(--ink)}
+.msgs{flex:1;overflow-y:auto;padding:26px 16px 20px;display:flex;flex-direction:column;gap:30px;background-image:radial-gradient(#dcdcdc 2px,transparent 2px);background-size:26px 26px;overscroll-behavior:contain}
+.mrow{display:flex;gap:10px;align-items:flex-end}
+.mrow.own{flex-direction:row-reverse}
+.av{width:38px;height:38px;border:3px solid var(--ink);display:grid;place-items:center;font-family:var(--btn);font-size:1.5rem;color:#fff;flex:none;margin-bottom:22px}
+.mc{max-width:78%;display:flex;flex-direction:column;gap:5px}
+.own .mc{align-items:flex-end}
+.nm{display:flex;align-items:center;gap:6px;font-family:var(--pix);font-weight:700;font-size:.9rem}
+.pv{font-family:var(--btn);font-size:.95rem;background:var(--ink);color:#fff;padding:0 6px;line-height:1.2}
+.pv.dev{background:var(--yellow);color:var(--ink);border:2px solid var(--ink)}
+.bb{--sc:#fff;background:#fff;border:3px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:9px 14px}
+.own .bb{background:var(--red);color:#fff;--sc:var(--red)}
+.bb p{margin:0;overflow-wrap:anywhere;white-space:pre-wrap}
+.q{font-size:.78rem;border-left:4px solid var(--yellow);background:#0000001a;padding:2px 8px;margin-bottom:6px;overflow-wrap:anywhere}
+.rt{display:flex;gap:2px;margin-bottom:3px}
+.rt svg{width:15px;height:15px}.rt polygon{fill:#ddd;stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}.rt .f polygon{fill:var(--yellow)}
+.ft{display:flex;gap:10px;font-size:.72rem;color:#555;align-items:center}
+.rp{font-family:var(--pix);font-size:.75rem;background:none;border:0;cursor:pointer;color:var(--blue);padding:0;text-decoration:underline}
+.cmp{--sc:var(--yellow);background:var(--yellow);border-top:4px solid var(--ink);padding:16px 16px calc(14px + env(safe-area-inset-bottom,0px));position:relative}
+.lock{font-family:var(--pix);font-size:.9rem;text-align:center;padding:4px 0}
+.rr{display:flex;align-items:center;gap:8px;font-family:var(--pix);font-size:.85rem;font-weight:700;margin-bottom:8px}
+.stars{display:flex;gap:4px}
+.star{background:none;border:0;padding:0;width:32px;height:32px;cursor:pointer}
+.star svg{width:100%;height:100%;overflow:visible}
+.star polygon{fill:#fff;stroke:var(--ink);stroke-width:2.5;stroke-linejoin:round}
+.star.on polygon{fill:var(--red)}
+.star:hover{transform:translateY(-2px)}
+.rb{display:flex;justify-content:space-between;align-items:center;font-size:.8rem;background:#fff;border:3px solid var(--ink);padding:2px 4px 2px 10px;margin-bottom:8px}
+.rb button{background:none;border:0;cursor:pointer;font-weight:700;font-size:1rem;color:var(--ink)}
+.fld{display:flex;gap:10px;align-items:stretch}
+textarea{flex:1;font:inherit;color:var(--ink);background:#fff;border:3px solid var(--ink);box-shadow:inset 3px 3px 0 #0002;padding:8px 10px;resize:none;height:64px}
+.send{font-family:var(--btn);font-size:1.3rem;background:var(--red);color:#fff;border:4px solid var(--ink);box-shadow:4px 4px 0 var(--ink);padding:0 14px;cursor:pointer}
+.send:hover{transform:translate(2px,2px);box-shadow:2px 2px 0 var(--ink)}
+.inf{display:flex;justify-content:space-between;font-size:.75rem;margin-top:6px}
+.err{color:var(--red);font-weight:700}
+@media (max-width:640px){.dr{border-left:0}.fab{right:14px}}
+@media (prefers-reduced-motion:reduce){.dr,.ov{transition:none}}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true"><symbol id="s" viewBox="0 0 24 24"><polygon points="12,2 15,9 22,9.5 16.8,14.3 18.4,21.5 12,17.8 5.6,21.5 7.2,14.3 2,9.5 9,9"/></symbol></svg>
+
+<div class="nav">FADHIL HARITZMANDA</div>
+<div class="hero"><h1>FADHIL PRIYA<span>HARITZMANDA</span></h1><p>Ini contoh halaman portofolio di belakang. Klik tombol Guestbook di kanan bawah untuk membuka panel.</p></div>
+<button class="fab st" id="fab" aria-haspopup="dialog">&#9998; Guestbook <em id="fc">0</em></button>
+
+<div class="ov" id="ov"></div>
+<aside class="dr" id="dr" role="dialog" aria-modal="true" aria-labelledby="tt" inert>
+  <header class="hd">
+    
+    <div class="ttl" id="tt">GUESTBOOK</div>
+    <button class="x" id="x" aria-label="Tutup guestbook">ESC &#10005;</button>
+  </header>
+  <section class="auth" id="auth" aria-live="polite"></section>
+  <div class="msgs" id="msgs" tabindex="0" aria-label="Daftar pesan"></div>
+  <footer class="cmp st" id="cmp"></footer>
+</aside>
+
+<script>
+const $=id=>document.getElementById(id);
+const COL=['#b3121a','#1f4fb4','#1a9e4a','#c77a00'];
+const col=s=>COL[[...s].reduce((a,c)=>a+c.charCodeAt(0),0)%4];
+const star='<svg viewBox="0 0 24 24"><use href="#s"/></svg>';
+const H=36e5,now=Date.now();
+let nid=10,user=null,rating=0,reply=null,lastFocus=null;
+const msgs=[
+ {id:1,n:'Rina Putri',p:'google',r:5,m:'Portofolionya rapi banget, tema LEGO-nya konsisten!',t:now-H*70},
+ {id:2,n:'dimas-dev',p:'github',r:4,m:'Animasi karakternya lucu. Semangat terus!',t:now-H*50},
+ {id:3,n:'Salsa A.',p:'google',r:5,m:'Suka banget sama widget cuacanya.',t:now-H*20},
+ {id:4,n:'Fadhil',p:'google',dev:true,m:'Makasih semuanya, nanti saya tambah fitur lagi!',reply:1,t:now-H*8}
+];
+const fmt=t=>new Date(t).toLocaleString('id-ID',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'});
+function renderAuth(){
+  const a=$('auth');
+  if(user){
+    a.innerHTML='<div class="meb"><span class="av" style="margin:0;background:'+col(user.n)+'">'+user.n[0].toUpperCase()+'</span><span><b></b> <span class="pv"></span></span><button class="lo">Logout</button></div>';
+    a.querySelector('b').textContent=user.n;a.querySelector('.pv').textContent=user.p.toUpperCase();
+    a.querySelector('.lo').onclick=()=>{user=null;reply=null;rating=0;renderAll()};
+  }else{
+    a.innerHTML='<h3>&#9679; Login untuk meninggalkan pesan</h3><div class="lg"><button class="ob st" data-p="github"><i>GH</i>GitHub</button><button class="ob g st" data-p="google"><i>G</i>Google</button></div>';
+    a.querySelectorAll('.ob').forEach(b=>b.onclick=()=>{user={n:b.dataset.p==='google'?'Pengunjung Demo':'demo-visitor',p:b.dataset.p};renderAll()});
+  }
+}
+function renderMsgs(){
+  const L=$('msgs');L.innerHTML='';
+  msgs.forEach(x=>{
+    const own=x.dev||x.own,d=document.createElement('div');d.className='mrow'+(own?' own':'');
+    d.innerHTML='<span class="av"></span><div class="mc"><div class="nm"><span></span><span class="pv"></span></div><div class="bb st"><div class="q" hidden></div><div class="rt" hidden></div><p></p></div><div class="ft"><span>'+fmt(x.t)+'</span><button class="rp">&#8627; Balas</button></div></div>';
+    const av=d.querySelector('.av');av.textContent=x.n[0].toUpperCase();av.style.background=col(x.n);
+    d.querySelector('.nm span').textContent=x.n;
+    const pv=d.querySelector('.pv');pv.textContent=x.dev?'DEV':x.p.toUpperCase();if(x.dev)pv.classList.add('dev');
+    d.querySelector('p').textContent=x.m;
+    if(x.reply){const o=msgs.find(y=>y.id===x.reply);if(o){const q=d.querySelector('.q');q.hidden=false;q.textContent='\u21B3 '+o.n+': '+o.m.slice(0,50)}}
+    if(x.r){const r=d.querySelector('.rt');r.hidden=false;r.setAttribute('role','img');r.setAttribute('aria-label','Rating '+x.r+' dari 5');r.innerHTML=[1,2,3,4,5].map(i=>'<span class="'+(i<=x.r?'f':'')+'">'+star+'</span>').join('')}
+    d.querySelector('.rp').onclick=()=>{if(!user){$('auth').scrollIntoView();return}reply=x;renderCmp();$('tx').focus()};
+    L.appendChild(d);
+  });
+  L.scrollTop=L.scrollHeight;
+  $('fc').textContent=msgs.length;
+}
+function renderCmp(){
+  const c=$('cmp');
+  if(!user){c.innerHTML='<div class="lock">Login dengan GitHub atau Google di atas untuk meninggalkan pesan.</div>';return}
+  c.innerHTML=(reply?'<div class="rb"><span id="rn"></span><button id="rc" aria-label="Batal membalas">&#10005;</button></div>':'')
+   +(reply?'':'<div class="rr"><span id="rl">Rating:</span><div class="stars" role="radiogroup" aria-labelledby="rl" id="stars"></div></div>')
+   +'<div class="fld"><textarea id="tx" maxlength="280" aria-label="Tulis pesan" placeholder="'+(reply?'Tulis balasan...':'Tulis pesan untuk portofolio ini...')+'"></textarea><button class="send" id="go">KIRIM</button></div><div class="inf"><span id="ct">0/280</span><span class="err" id="er" role="alert"></span></div>';
+  if(reply){$('rn').textContent='Membalas '+reply.n;$('rc').onclick=()=>{reply=null;renderCmp()}}
+  else{const sb=$('stars');for(let i=1;i<=5;i++){const b=document.createElement('button');b.type='button';b.className='star'+(i<=rating?' on':'');b.setAttribute('role','radio');b.setAttribute('aria-label',i+' bintang');b.setAttribute('aria-checked',String(i===rating));b.innerHTML=star;b.onclick=()=>{rating=i;[...sb.children].forEach((s,k)=>{s.classList.toggle('on',k<i);s.setAttribute('aria-checked',String(k+1===i))})};sb.appendChild(b)}}
+  $('tx').oninput=e=>{$('ct').textContent=e.target.value.length+'/280'};
+  $('go').onclick=()=>{
+    const m=$('tx').value.trim();
+    if(!reply&&!rating){$('er').textContent='Pilih rating dulu.';return}
+    if(!m){$('er').textContent='Pesan tidak boleh kosong.';return}
+    msgs.push({id:nid++,n:user.n,p:user.p,own:true,r:reply?0:rating,m,reply:reply?reply.id:0,t:Date.now()});
+    reply=null;rating=0;renderMsgs();renderCmp();
+  };
+}
+function renderAll(){renderAuth();renderMsgs();renderCmp()}
+function openD(){lastFocus=document.activeElement;$('dr').inert=false;$('dr').classList.add('open');$('ov').classList.add('open');document.body.style.overflow='hidden';$('x').focus()}
+function closeD(){$('dr').classList.remove('open');$('ov').classList.remove('open');$('dr').inert=true;document.body.style.overflow='';if(lastFocus)lastFocus.focus()}
+$('fab').onclick=openD;$('x').onclick=closeD;$('ov').onclick=closeD;
+addEventListener('keydown',e=>{if(e.key==='Escape'&&$('dr').classList.contains('open'))closeD()});
+renderAll();
+</script>
+</body>
+</html>
