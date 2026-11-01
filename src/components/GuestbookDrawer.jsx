@@ -30,11 +30,17 @@ export default function GuestbookDrawer() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
-  const [rating, setRating] = useState(0);
-  const [hoverRating, setHoverRating] = useState(0);
   const [messageText, setMessageText] = useState('');
   const [cooldown, setCooldown] = useState(0);
   const [isOtherModalOpen, setIsOtherModalOpen] = useState(false);
+
+  // Ratings State (separated from comments)
+  const [ratings, setRatings] = useState([]);
+  const [userRating, setUserRating] = useState(null);
+  const [hoverRating, setHoverRating] = useState(0);
+  const [isEditingRating, setIsEditingRating] = useState(false);
+  const [ratingSubmitting, setRatingSubmitting] = useState(false);
+  const [ratingError, setRatingError] = useState('');
 
   const msgsContainerRef = useRef(null);
   const textareaRef = useRef(null);
@@ -95,7 +101,7 @@ export default function GuestbookDrawer() {
     return () => subscription.unsubscribe();
   }, []);
 
-  // Fetch messages and subscribe to realtime changes
+  // Fetch comments from guestbook table
   const fetchMessages = async () => {
     if (!isSupabaseConfigured) {
       setLoading(false);
@@ -118,13 +124,31 @@ export default function GuestbookDrawer() {
     }
   };
 
+  // Fetch ratings from guestbook_ratings table
+  const fetchRatings = async () => {
+    if (!isSupabaseConfigured) return;
+
+    try {
+      const { data, error } = await supabase
+        .from('guestbook_ratings')
+        .select('user_id, rating');
+
+      if (error) throw error;
+      setRatings(data || []);
+    } catch (err) {
+      console.error('Fetch ratings error:', err);
+    }
+  };
+
+  // Subscribe to realtime changes for both guestbook and guestbook_ratings
   useEffect(() => {
     fetchMessages();
+    fetchRatings();
 
     if (!isSupabaseConfigured) return;
 
-    const channel = supabase
-      .channel('guestbook_realtime')
+    const messagesChannel = supabase
+      .channel('guestbook_messages_realtime')
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'guestbook' },
@@ -134,10 +158,37 @@ export default function GuestbookDrawer() {
       )
       .subscribe();
 
+    const ratingsChannel = supabase
+      .channel('guestbook_ratings_realtime')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'guestbook_ratings' },
+        () => {
+          fetchRatings();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(messagesChannel);
+      supabase.removeChannel(ratingsChannel);
     };
   }, []);
+
+  // Sync current user's rating whenever user or ratings change
+  useEffect(() => {
+    if (user && ratings.length > 0) {
+      const existing = ratings.find((r) => r.user_id === user.id);
+      if (existing) {
+        setUserRating(Number(existing.rating));
+      } else {
+        setUserRating(null);
+      }
+    } else if (!user) {
+      setUserRating(null);
+      setIsEditingRating(false);
+    }
+  }, [user, ratings]);
 
   // Auto scroll to bottom of messages container
   useEffect(() => {
@@ -191,6 +242,7 @@ export default function GuestbookDrawer() {
     triggerBtnRef.current?.focus();
   };
 
+  // Google & GitHub OAuth Login
   const handleLogin = async (provider) => {
     if (!isSupabaseConfigured) {
       setErrorMsg('Supabase belum dikonfigurasi. Harap isi file .env.local.');
@@ -202,6 +254,13 @@ export default function GuestbookDrawer() {
         provider,
         options: {
           redirectTo: window.location.origin,
+          queryParams:
+            provider === 'google'
+              ? {
+                  access_type: 'offline',
+                  prompt: 'select_account',
+                }
+              : undefined,
         },
       });
       if (error) throw error;
@@ -215,21 +274,50 @@ export default function GuestbookDrawer() {
     try {
       await supabase.auth.signOut();
       setUser(null);
+      setUserRating(null);
+      setIsEditingRating(false);
     } catch (err) {
       console.error('Logout error:', err);
     }
   };
 
+  // Save/Upsert rating to guestbook_ratings (1-5, single per user)
+  const handleSaveRating = async (val) => {
+    if (!user) {
+      setRatingError('Anda harus login untuk memberi rating.');
+      return;
+    }
+    try {
+      setRatingSubmitting(true);
+      setRatingError('');
+      const { error } = await supabase
+        .from('guestbook_ratings')
+        .upsert(
+          { user_id: user.id, rating: val },
+          { onConflict: 'user_id' }
+        );
+
+      if (error) throw error;
+
+      setUserRating(val);
+      setIsEditingRating(false);
+      await fetchRatings();
+    } catch (err) {
+      console.error('Error saving rating:', err);
+      setRatingError(err.message || 'Gagal menyimpan rating.');
+    } finally {
+      setRatingSubmitting(false);
+    }
+  };
+
+  // Insert comment to guestbook (WITHOUT rating column)
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!user) {
       setErrorMsg('Silakan login terlebih dahulu.');
       return;
     }
-    if (!rating || rating < 1 || rating > 5) {
-      setErrorMsg('Pilih rating bintang terlebih dahulu (1-5).');
-      return;
-    }
+
     const trimmed = messageText.trim();
     if (!trimmed) {
       setErrorMsg('Pesan tidak boleh kosong.');
@@ -248,10 +336,10 @@ export default function GuestbookDrawer() {
     setErrorMsg('');
 
     try {
-      // NOTE: Database trigger automatically populates user_id, name, avatar_url, and provider
+      // NOTE: Database trigger populates user_id, name, avatar_url, and provider.
+      // Rating is NOT included here as rating column has been removed from guestbook.
       const { error } = await supabase.from('guestbook').insert([
         {
-          rating,
           message: trimmed,
         },
       ]);
@@ -259,8 +347,6 @@ export default function GuestbookDrawer() {
       if (error) throw error;
 
       setMessageText('');
-      setRating(0);
-      setHoverRating(0);
       setCooldown(10);
       await fetchMessages();
     } catch (err) {
@@ -302,6 +388,16 @@ export default function GuestbookDrawer() {
       'OAUTH'
     ).toUpperCase();
   };
+
+  // Rating Statistics
+  const totalRatings = ratings.length;
+  const avgRating =
+    totalRatings > 0
+      ? (
+          ratings.reduce((acc, curr) => acc + (Number(curr.rating) || 0), 0) /
+          totalRatings
+        ).toFixed(1)
+      : null;
 
   const isShown = !isOtherModalOpen;
 
@@ -365,6 +461,25 @@ export default function GuestbookDrawer() {
           </button>
         </header>
 
+        {/* Rating Summary Bar at Top of Panel */}
+        <div className="gb-rating-bar" aria-label="Ringkasan Rating Portfolio">
+          <div className="gb-rating-stat-left">
+            <span className="gb-star-icon" aria-hidden="true">★</span>
+            <span className="font-mono font-bold text-[1.1rem] text-[#141414]">
+              {avgRating ? avgRating : '0.0'}
+            </span>
+            <span className="text-xs text-[#555] font-mono">
+              / 5.0 ({totalRatings} {totalRatings === 1 ? 'ulasan' : 'ulasan'})
+            </span>
+          </div>
+          <div className="gb-score-badge">
+            <span>{avgRating ? `${avgRating} ★` : '★ -.-'}</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">
+              {totalRatings > 0 ? 'Skor' : 'Belum Ada'}
+            </span>
+          </div>
+        </div>
+
         {/* Configuration Notice if Supabase not set up */}
         {!isSupabaseConfigured && (
           <div className="bg-[#fff9db] border-b-4 border-[#141414] p-3 text-xs font-mono text-[#856404] flex items-start gap-2">
@@ -422,30 +537,9 @@ export default function GuestbookDrawer() {
             <div>
               <h3 className="gb-auth-ttl">
                 <span className="gb-auth-dot" />
-                Login untuk meninggalkan pesan
+                Login untuk meninggalkan pesan & rating
               </h3>
               <div className="gb-lg-grid">
-                {/* GitHub OAuth Button */}
-                <button
-                  type="button"
-                  className="gb-ob gb-st"
-                  onClick={() => handleLogin('github')}
-                  aria-label="Login dengan GitHub"
-                >
-                  <svg
-                    className="w-5 h-5 flex-shrink-0 fill-current"
-                    viewBox="0 0 24 24"
-                    aria-hidden="true"
-                  >
-                    <path
-                      fillRule="evenodd"
-                      clipRule="evenodd"
-                      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
-                    />
-                  </svg>
-                  <span>GitHub</span>
-                </button>
-
                 {/* Google OAuth Button */}
                 <button
                   type="button"
@@ -476,6 +570,27 @@ export default function GuestbookDrawer() {
                     />
                   </svg>
                   <span>Google</span>
+                </button>
+
+                {/* GitHub OAuth Button */}
+                <button
+                  type="button"
+                  className="gb-ob gb-st"
+                  onClick={() => handleLogin('github')}
+                  aria-label="Login dengan GitHub"
+                >
+                  <svg
+                    className="w-5 h-5 flex-shrink-0 fill-current"
+                    viewBox="0 0 24 24"
+                    aria-hidden="true"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      clipRule="evenodd"
+                      d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z"
+                    />
+                  </svg>
+                  <span>GitHub</span>
                 </button>
               </div>
             </div>
@@ -552,30 +667,8 @@ export default function GuestbookDrawer() {
                       </span>
                     </div>
 
-                    {/* Message Bubble with LEGO Studs */}
+                    {/* Message Bubble with LEGO Studs (Rating stars removed per user request) */}
                     <div className="gb-bb gb-st">
-                      {/* Rating Stars */}
-                      {msg.rating > 0 && (
-                        <div
-                          className="gb-rt"
-                          role="img"
-                          aria-label={`Rating ${msg.rating} dari 5 bintang`}
-                        >
-                          {[1, 2, 3, 4, 5].map((starVal) => (
-                            <span
-                              key={starVal}
-                              className={starVal <= msg.rating ? 'f' : ''}
-                            >
-                              <svg viewBox="0 0 24 24">
-                                <polygon
-                                  points="12,2 15,9 22,9.5 16.8,14.3 18.4,21.5 12,17.8 5.6,21.5 7.2,14.3 2,9.5 9,9"
-                                />
-                              </svg>
-                            </span>
-                          ))}
-                        </div>
-                      )}
-
                       {/* XSS Safe Text Content via native React JSX escaping */}
                       <p>{msg.message}</p>
                     </div>
@@ -604,81 +697,129 @@ export default function GuestbookDrawer() {
         <footer className="gb-cmp gb-st">
           {!user ? (
             <div className="gb-lock">
-              Login dengan GitHub atau Google di atas untuk meninggalkan pesan.
+              Login dengan Google atau GitHub di atas untuk meninggalkan pesan & rating.
             </div>
           ) : (
-            <form onSubmit={handleSubmit}>
-              {/* Star Rating Picker */}
-              <div className="gb-rr">
-                <span id="rating-label">Rating:</span>
-                <div
-                  className="gb-stars"
-                  role="radiogroup"
-                  aria-labelledby="rating-label"
-                >
-                  {[1, 2, 3, 4, 5].map((val) => {
-                    const active = (hoverRating || rating) >= val;
-                    return (
-                      <button
-                        key={val}
-                        type="button"
-                        className={`gb-star ${active ? 'on' : ''}`}
-                        role="radio"
-                        aria-label={`${val} bintang`}
-                        aria-checked={rating === val}
-                        onClick={() => setRating(val)}
-                        onMouseEnter={() => setHoverRating(val)}
-                        onMouseLeave={() => setHoverRating(0)}
-                      >
-                        <svg viewBox="0 0 24 24">
-                          <polygon
-                            points="12,2 15,9 22,9.5 16.8,14.3 18.4,21.5 12,17.8 5.6,21.5 7.2,14.3 2,9.5 9,9"
-                          />
-                        </svg>
-                      </button>
-                    );
-                  })}
+            <div>
+              {/* Rating Section: Single rating per user with Upsert and Edit */}
+              {userRating && !isEditingRating ? (
+                <div className="gb-my-rating">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs font-bold text-[#141414]">
+                      Rating kamu:
+                    </span>
+                    <span className="bg-[#141414] text-[#ffd500] px-1.5 py-0.5 font-mono font-bold text-xs">
+                      {userRating} ★
+                    </span>
+                    <span className="text-[11px] text-[#555]">
+                      ({userRating} dari 5 bintang)
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsEditingRating(true)}
+                    className="gb-edit-rating-btn"
+                    aria-label="Ubah rating"
+                  >
+                    Ubah
+                  </button>
                 </div>
-              </div>
-
-              {/* Input Area */}
-              <div className="gb-fld">
-                <textarea
-                  ref={textareaRef}
-                  value={messageText}
-                  onChange={(e) => setMessageText(e.target.value)}
-                  maxLength={280}
-                  aria-label="Tulis pesan untuk portofolio ini"
-                  placeholder="Tulis pesan untuk portofolio ini..."
-                  className="gb-textarea"
-                />
-                <button
-                  type="submit"
-                  disabled={submitting || cooldown > 0}
-                  className="gb-send"
-                >
-                  {submitting
-                    ? '...'
-                    : cooldown > 0
-                    ? `(${cooldown}S)`
-                    : 'KIRIM'}
-                </button>
-              </div>
-
-              {/* Status and Counter */}
-              <div className="gb-inf">
-                <span className="gb-ct">{messageText.length}/280</span>
-                {errorMsg && (
-                  <span className="gb-err" role="alert">
-                    {errorMsg}
+              ) : (
+                <div className="gb-rr">
+                  <span id="rating-label">
+                    {isEditingRating ? 'Ubah rating kamu:' : 'Beri rating (opsional):'}
                   </span>
-                )}
-              </div>
-            </form>
+                  <div
+                    className="gb-stars"
+                    role="radiogroup"
+                    aria-labelledby="rating-label"
+                  >
+                    {[1, 2, 3, 4, 5].map((val) => {
+                      const active =
+                        (hoverRating || (isEditingRating ? userRating : 0)) >= val;
+                      return (
+                        <button
+                          key={val}
+                          type="button"
+                          disabled={ratingSubmitting}
+                          className={`gb-star ${active ? 'on' : ''}`}
+                          role="radio"
+                          aria-label={`${val} bintang`}
+                          aria-checked={userRating === val}
+                          onClick={() => handleSaveRating(val)}
+                          onMouseEnter={() => setHoverRating(val)}
+                          onMouseLeave={() => setHoverRating(0)}
+                        >
+                          <svg viewBox="0 0 24 24">
+                            <polygon
+                              points="12,2 15,9 22,9.5 16.8,14.3 18.4,21.5 12,17.8 5.6,21.5 7.2,14.3 2,9.5 9,9"
+                            />
+                          </svg>
+                        </button>
+                      );
+                    })}
+                  </div>
+                  {isEditingRating && (
+                    <button
+                      type="button"
+                      onClick={() => setIsEditingRating(false)}
+                      className="text-xs text-[#555] underline hover:text-[#141414] ml-auto font-mono cursor-pointer"
+                    >
+                      Batal
+                    </button>
+                  )}
+                  {ratingSubmitting && (
+                    <span className="text-xs font-mono text-[#555] animate-pulse">
+                      Menyimpan...
+                    </span>
+                  )}
+                  {ratingError && (
+                    <span className="text-xs text-[#b3121a] font-bold w-full">
+                      {ratingError}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Comment Input Form */}
+              <form onSubmit={handleSubmit}>
+                <div className="gb-fld">
+                  <textarea
+                    ref={textareaRef}
+                    value={messageText}
+                    onChange={(e) => setMessageText(e.target.value)}
+                    maxLength={280}
+                    aria-label="Tulis pesan untuk portofolio ini"
+                    placeholder="Tulis pesan untuk portofolio ini..."
+                    className="gb-textarea"
+                  />
+                  <button
+                    type="submit"
+                    disabled={submitting || cooldown > 0}
+                    className="gb-send"
+                  >
+                    {submitting
+                      ? '...'
+                      : cooldown > 0
+                      ? `(${cooldown}S)`
+                      : 'KIRIM'}
+                  </button>
+                </div>
+
+                {/* Status and Counter */}
+                <div className="gb-inf">
+                  <span className="gb-ct">{messageText.length}/280</span>
+                  {errorMsg && (
+                    <span className="gb-err" role="alert">
+                      {errorMsg}
+                    </span>
+                  )}
+                </div>
+              </form>
+            </div>
           )}
         </footer>
       </div>
     </aside>
   );
 }
-

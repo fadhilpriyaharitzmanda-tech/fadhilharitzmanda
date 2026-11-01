@@ -147,6 +147,43 @@
   box-shadow: 1px 1px 0 var(--gb-ink);
 }
 
+/* Rating Summary Bar at Top of Panel */
+.gb-rating-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 18px;
+  background: #ffffff;
+  border-bottom: 3px solid var(--gb-ink);
+  font-family: var(--gb-pix);
+  flex-shrink: 0;
+  gap: 10px;
+}
+.gb-rating-stat-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.gb-star-icon {
+  color: var(--gb-yellow);
+  font-size: 1.35rem;
+  line-height: 1;
+  text-shadow: 1px 1px 0 var(--gb-ink);
+}
+.gb-score-badge {
+  font-family: var(--gb-btn);
+  font-size: 1.2rem;
+  line-height: 1;
+  background: var(--gb-yellow);
+  color: var(--gb-ink);
+  border: 2px solid var(--gb-ink);
+  box-shadow: 2px 2px 0 var(--gb-ink);
+  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 /* Auth Section */
 .gb-auth {
   padding: 16px 18px 14px;
@@ -379,6 +416,32 @@
   font-weight: 700;
   margin-bottom: 8px;
   color: var(--gb-ink);
+  flex-wrap: wrap;
+}
+.gb-my-rating {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #ffffff;
+  border: 3px solid var(--gb-ink);
+  box-shadow: 3px 3px 0 var(--gb-ink);
+  padding: 6px 12px;
+  margin-bottom: 10px;
+  font-family: var(--gb-pix);
+}
+.gb-edit-rating-btn {
+  font-family: var(--gb-pix);
+  font-size: 0.82rem;
+  font-weight: 700;
+  color: var(--gb-blue);
+  background: none;
+  border: 0;
+  text-decoration: underline;
+  cursor: pointer;
+  padding: 0;
+}
+.gb-edit-rating-btn:hover {
+  color: var(--gb-red);
 }
 .gb-stars {
   display: flex;
