@@ -1332,16 +1332,8 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                             )}
                           </span>
                           <div className="tx">
-                            <b>
-                              {p.title}
-                              {p.year && (
-                                <span className="tg" style={{ background: '#1f4fb4' }}>
-                                  {p.year} · {(p.category || 'Web').toUpperCase()}
-                                </span>
-                              )}
-                              {!p.published && <span className="tg">DRAFT</span>}
-                            </b>
-                            <p>{p.description || 'Tidak ada deskripsi'}</p>
+                            <b title={p.title}>{p.title}</b>
+                            <p title={p.description}>{p.description || 'Tidak ada deskripsi'}</p>
                           </div>
                         </div>
                       );

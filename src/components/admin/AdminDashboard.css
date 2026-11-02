@@ -205,8 +205,64 @@
 
 .lego-admin-scope .two {
   display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 0 22px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 22px;
+  width: 100%;
+  min-width: 0;
+  align-items: stretch;
+}
+
+.lego-admin-scope .two > .card {
+  min-width: 0;
+  width: 100%;
+  margin-bottom: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.lego-admin-scope .two .row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 0;
+  width: 100%;
+  min-width: 0;
+  flex-wrap: nowrap !important;
+}
+
+.lego-admin-scope .two .th,
+.lego-admin-scope .two .av {
+  width: 42px;
+  height: 42px;
+  flex-shrink: 0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.lego-admin-scope .two .tx {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.lego-admin-scope .two .tx b {
+  font-size: 0.93rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: block;
+  margin-bottom: 2px;
+}
+
+.lego-admin-scope .two .tx p {
+  margin: 0;
+  font-size: 0.82rem;
+  color: var(--adm-muted);
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  display: block !important;
 }
 
 .lego-admin-scope .btn {
@@ -725,7 +781,18 @@
   .lego-admin-scope .nv.on {
     box-shadow: none;
   }
-  .lego-admin-scope .two,
+  .lego-admin-scope .two {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 12px;
+  }
+  .lego-admin-scope .two .row {
+    flex-wrap: nowrap !important;
+  }
+  .lego-admin-scope .two .th,
+  .lego-admin-scope .two .av {
+    width: 36px;
+    height: 36px;
+  }
   .lego-admin-scope .form,
   .lego-admin-scope .g2 {
     display: block;

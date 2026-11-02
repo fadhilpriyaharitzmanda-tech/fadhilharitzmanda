@@ -31,7 +31,12 @@ h1{font-family:var(--pix);font-weight:700;font-size:1.9rem;margin:0;line-height:
 .stat::before{content:"";position:absolute;left:14px;top:-9px;width:46px;height:9px;background:radial-gradient(circle at 50% 100%,var(--c) 0 3.5px,var(--ink) 3.5px 6px,transparent 6.2px) 0 0/23px 9px repeat-x}
 .stat b{font-size:2.1rem;line-height:1.1;display:block;font-weight:700}
 .stat span{font-size:.82rem;color:var(--muted)}
-.two{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+.two{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:20px;align-items:stretch}
+.two>.card{min-width:0;width:100%;margin-bottom:0}
+.two .row{flex-wrap:nowrap!important}
+.two .tx{overflow:hidden}
+.two .tx b{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;display:block}
+.two .tx p{white-space:nowrap!important;overflow:hidden!important;text-overflow:ellipsis!important;display:block!important}
 .btn{display:inline-flex;align-items:center;gap:8px;font:700 .92rem var(--body);color:#fff;background:var(--red);border:2px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink);padding:9px 16px;cursor:pointer}
 .btn.w{background:#fff;color:var(--ink)}
 .btn:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
@@ -87,7 +92,8 @@ dialog{max-height:92vh;overflow:auto}
  aside{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;flex-direction:row;border-right:0;border-top:2px solid var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:40;gap:2px}
  .brand,.sp,.lo{display:none}
  .nv{flex-direction:column;gap:2px;font-size:.7rem;padding:6px 2px;align-items:center;justify-content:center;text-align:center}.nv.on{box-shadow:none}
- .two,.form,.g2{display:block}.pvbox{position:static}
+ .two{grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px}
+ .form,.g2{display:block}.pvbox{position:static}
  .row{flex-wrap:wrap}.sw{min-width:0}
  .tx p{white-space:normal}
 }
@@ -178,8 +184,11 @@ const CATS=['Web','Mobile','Game','Desktop','Lainnya'];
 let cur=[];
 S.projects.unshift({id:4,y:2026,cat:'Web',t:'Edify - E-Learning & Coding Playground',d:'Platform e-learning fundamental skill digital dengan in-browser code playground dan terminal sandbox interaktif berbasis React.js.',prob:'Banyak pemula yang ingin belajar pemrograman terkendala instalasi compiler/runtime di komputer mereka, dan butuh latihan coding terarah dengan umpan balik instan.',sol:'Web e-learning interaktif berbasis React.js dengan coding playground multi-bahasa, editor kode dengan sintaks highlight, dan konsol terminal real-time.',hl:['Katalog pelatihan fundamental skill digital (Web Development, AI Engineering, UI/UX Design, Data Science)','In-browser interactive coding playground tanpa instalasi lokal','Dukungan multi-bahasa: Python, PHP, JavaScript, Java, C#, dan C++','Editor kode cerdas dengan shortcut eksekusi (Ctrl + Enter) dan indikator engine siap','Terminal console terintegrasi untuk output program secara langsung','Antarmuka modern, interaktif, dan responsif'],tech:'React.js, JavaScript, Tailwind CSS, HTML5/CSS3, Python Playground',repo:'https://github.com/',demo:'',imgs:[],pub:true});
 function projRow(x,full){
+  if(!full){
+    return `<div class="row">${th(x.t,x.id)}<div class="tx"><b title="${esc(x.t)}">${esc(x.t)}</b><p title="${esc(x.d)}">${esc(x.d)}</p></div></div>`;
+  }
   const tag=x.y?`<span class="tg" style="background:var(--blue)">${x.y} · ${esc((x.cat||'').toUpperCase())}</span>`:'';
-  return `<div class="row">${th(x.t,x.id)}<div class="tx"><b>${esc(x.t)}${tag}${x.pub?'':'<span class="tg">DRAFT</span>'}</b><p>${esc(x.d)}</p>${full?`<div class="chips">${chips(x.tech)}</div>`:''}</div>${full?`<button class="sw" role="switch" aria-checked="${x.pub}" data-a="tog" data-id="${x.id}"><i></i>${x.pub?'Tampil':'Draft'}</button><div class="acts"><button class="ib" data-a="edp" data-id="${x.id}" aria-label="Edit ${esc(x.t)}">${ic('edit')}</button><button class="ib d" data-a="delp" data-id="${x.id}" aria-label="Hapus ${esc(x.t)}">${ic('del')}</button></div>`:''}</div>`;
+  return `<div class="row">${th(x.t,x.id)}<div class="tx"><b>${esc(x.t)}${tag}${x.pub?'':'<span class="tg">DRAFT</span>'}</b><p>${esc(x.d)}</p><div class="chips">${chips(x.tech)}</div></div><button class="sw" role="switch" aria-checked="${x.pub}" data-a="tog" data-id="${x.id}"><i></i>${x.pub?'Tampil':'Draft'}</button><div class="acts"><button class="ib" data-a="edp" data-id="${x.id}" aria-label="Edit ${esc(x.t)}">${ic('edit')}</button><button class="ib d" data-a="delp" data-id="${x.id}" aria-label="Hapus ${esc(x.t)}">${ic('del')}</button></div></div>`;
 }
 function imgGrid(){
   $('#ig').innerHTML=cur.map((m,i)=>`<div class="im"><img src="${m.src}" alt="Gambar ${i+1}">${i?'':'<span class="cv">COVER</span>'}<div class="ia">${i?`<button type="button" class="ib" data-a="imgcover" data-i="${i}" aria-label="Jadikan gambar ${i+1} sebagai cover">★</button>`:''}<button type="button" class="ib d" data-a="imgdel" data-i="${i}" aria-label="Hapus gambar ${i+1}">${ic('del')}</button></div></div>`).join('');
