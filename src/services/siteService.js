@@ -103,29 +103,80 @@ export const fetchPublishedProjects = async () => {
       return defaultProjects;
     }
 
-    // Map database rows to UI structure while keeping compatibility
-    return data.map((p, idx) => ({
-      id: p.id,
-      title: p.title,
-      description: p.description || '',
-      tech: p.tech || '',
-      technologies: p.tech
-        ? p.tech.split(',').map((t) => t.trim()).filter(Boolean)
-        : [],
-      category: 'Web',
-      year: p.created_at ? new Date(p.created_at).getFullYear().toString() : '2026',
-      image: p.image_url || '/images/profile-hero.jpg',
-      links: {
-        demo: p.demo_url || '',
-        github: p.repo_url || '',
-      },
-      published: p.published,
-      created_at: p.created_at,
-    }));
+    // Map database rows to UI structure and enrich with rich modal fields if matched
+    const dbProjects = data.map((p) => {
+      const matched = defaultProjects.find(
+        (def) => def.title.toLowerCase().trim() === p.title.toLowerCase().trim()
+      );
+
+      return {
+        id: p.id,
+        title: p.title,
+        description: p.description || matched?.description || '',
+        tech: p.tech || matched?.technologies?.join(', ') || '',
+        technologies: p.tech
+          ? p.tech.split(',').map((t) => t.trim()).filter(Boolean)
+          : matched?.technologies || [],
+        category: matched?.category || 'Web',
+        year: p.created_at ? new Date(p.created_at).getFullYear().toString() : (matched?.year || '2026'),
+        image: p.image_url || matched?.image || '/images/profile-hero.jpg',
+        images: matched?.images || (p.image_url ? [{ src: p.image_url, caption: p.title }] : []),
+        overview: matched?.overview,
+        problem: matched?.problem,
+        solution: matched?.solution,
+        features: matched?.features,
+        role: matched?.role,
+        links: {
+          demo: p.demo_url || matched?.links?.demo || '',
+          github: p.repo_url || matched?.links?.github || '',
+        },
+        published: p.published,
+        created_at: p.created_at,
+      };
+    });
+
+    // Ensure the 4 original projects from defaultProjects are always included
+    const existingTitles = new Set(dbProjects.map((p) => p.title.toLowerCase().trim()));
+    const missingDefaults = defaultProjects.filter(
+      (def) => !existingTitles.has(def.title.toLowerCase().trim())
+    );
+
+    return [...dbProjects, ...missingDefaults];
   } catch (err) {
     console.warn('fetchPublishedProjects exception:', err);
     return defaultProjects;
   }
+};
+
+/**
+ * Import default 4 projects into Supabase if not yet present
+ */
+export const importDefaultProjectsToSupabase = async () => {
+  if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
+
+  const current = await fetchAllProjectsAdmin();
+  const currentTitles = new Set((current || []).map((p) => p.title.toLowerCase().trim()));
+
+  const toInsert = defaultProjects
+    .filter((def) => !currentTitles.has(def.title.toLowerCase().trim()))
+    .map((def) => ({
+      title: def.title,
+      description: def.description,
+      tech: def.technologies ? def.technologies.join(', ') : '',
+      demo_url: def.links?.demo || '',
+      repo_url: def.links?.github || '',
+      image_url: def.image || null,
+      published: true,
+    }));
+
+  if (toInsert.length === 0) {
+    return { count: 0, message: 'Semua 4 project bawaan sudah ada di database.' };
+  }
+
+  const { data, error } = await supabase.from('projects').insert(toInsert).select();
+  if (error) throw error;
+
+  return { count: data.length, data };
 };
 
 /**

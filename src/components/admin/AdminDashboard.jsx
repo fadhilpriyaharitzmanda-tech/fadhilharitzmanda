@@ -11,6 +11,7 @@ import {
   fetchAdminGuestbook,
   deleteAdminGuestbookMessage,
   fetchRatingsSummary,
+  importDefaultProjectsToSupabase,
 } from '../../services/siteService';
 import { useSiteData } from '../../context/SiteContext';
 import './AdminDashboard.css';
@@ -119,6 +120,26 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
   const [projectFile, setProjectFile] = useState(null);
   const [projectUploading, setProjectUploading] = useState(false);
   const [projectModalError, setProjectModalError] = useState('');
+  const [importing, setImporting] = useState(false);
+
+  const handleImportDefaults = async () => {
+    setImporting(true);
+    try {
+      const res = await importDefaultProjectsToSupabase();
+      await loadAdminData();
+      await refreshSiteData();
+      showToast(
+        res.count > 0
+          ? `${res.count} project bawaan berhasil dipulihkan!`
+          : 'Semua 4 project bawaan sudah ada di database.'
+      );
+    } catch (err) {
+      console.error('Import error:', err);
+      showToast(err.message || 'Gagal memulihkan project.');
+    } finally {
+      setImporting(false);
+    }
+  };
 
   // Fetch all admin data (only runs when AdminGate grants status === 'ok')
   const loadAdminData = async () => {
@@ -428,9 +449,20 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
             </div>
 
             {view === 'projects' && (
-              <button type="button" className="btn" onClick={openNewProjectModal}>
-                <Icon name="plus" /> Tambah project
-              </button>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn w"
+                  onClick={handleImportDefaults}
+                  disabled={importing}
+                  title="Pulihkan dan masukkan 4 project bawaan ke database"
+                >
+                  {importing ? 'Memulihkan...' : 'Pulihkan 4 Project Bawaan'}
+                </button>
+                <button type="button" className="btn" onClick={openNewProjectModal}>
+                  <Icon name="plus" /> Tambah project
+                </button>
+              </div>
             )}
 
             {view === 'profile' && (
