@@ -557,12 +557,76 @@
   border-radius: 16px;
   box-shadow: 5px 5px 0 var(--adm-ink, #141414);
   padding: 24px;
-  max-width: 560px;
+  max-width: 680px;
+  max-height: 92vh;
+  overflow-y: auto;
   width: 100%;
   background: #ffffff;
   color: var(--adm-ink, #141414);
   position: relative;
   font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.lego-admin-scope .igrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.lego-admin-scope .im {
+  position: relative;
+  border: 2px solid var(--adm-ink, #141414);
+  border-radius: 8px;
+  overflow: hidden;
+  aspect-ratio: 4/3;
+  background: var(--adm-soft, #f6f6f4);
+}
+
+.lego-admin-scope .im img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.lego-admin-scope .cv {
+  position: absolute;
+  left: 4px;
+  top: 4px;
+  background: var(--adm-yellow, #ffd500);
+  border: 2px solid var(--adm-ink, #141414);
+  border-radius: 5px;
+  font-family: var(--adm-body, 'Space Grotesk', sans-serif);
+  font-weight: 700;
+  font-size: 0.65rem;
+  padding: 1px 6px;
+  line-height: 1.2;
+  z-index: 2;
+}
+
+.lego-admin-scope .ia {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  display: flex;
+  gap: 4px;
+  z-index: 2;
+}
+
+.lego-admin-scope .ia .ib {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  font-size: 0.85rem;
+  display: grid;
+  place-items: center;
+  box-shadow: 1px 1px 0 var(--adm-ink, #141414);
+}
+
+.lego-admin-scope .ia .ib svg {
+  width: 14px;
+  height: 14px;
 }
 
 .lego-modal-content h2 {

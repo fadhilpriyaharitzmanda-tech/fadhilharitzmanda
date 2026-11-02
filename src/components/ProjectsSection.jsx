@@ -5,12 +5,18 @@ import DetailModal from './DetailModal';
 
 function getCategoryBadgeClass(category) {
   switch (category) {
+    case 'Web':
+      return 'bg-brick-blue text-white';
+    case 'Mobile':
+      return 'bg-[#00852B] text-white';
+    case 'Game':
+      return 'bg-primary text-white';
+    case 'Desktop':
+      return 'bg-[#6b21a8] text-white';
     case 'UI/UX Design':
       return 'bg-[#00852B] text-white';
     case 'Machine Learning':
       return 'bg-primary text-white';
-    case 'Web':
-      return 'bg-brick-blue text-white';
     case 'IoT':
       return 'bg-brick-yellow text-on-surface';
     default:
@@ -18,7 +24,7 @@ function getCategoryBadgeClass(category) {
   }
 }
 
-const categories = ['All', 'Web'];
+const DEFAULT_CATEGORIES = ['All', 'Web', 'Mobile', 'Game', 'Desktop', 'Lainnya'];
 const INITIAL_PROJECTS_COUNT = 6;
 
 export default function ProjectsSection() {
@@ -28,6 +34,9 @@ export default function ProjectsSection() {
   const { projects: siteProjects } = useSiteData();
 
   const allProjects = siteProjects && siteProjects.length > 0 ? siteProjects : defaultProjects;
+
+  const uniqueCats = Array.from(new Set(allProjects.map((p) => p.category).filter(Boolean)));
+  const categories = ['All', ...new Set(['Web', 'Mobile', 'Game', 'Desktop', 'Lainnya', ...uniqueCats])];
 
   const filteredProjects =
     activeCategory === 'All'
@@ -87,23 +96,31 @@ export default function ProjectsSection() {
                 onClick={() => setSelectedProject(project)}
                 className="relative aspect-[16/10] border-b-4 border-on-surface bg-surface-container-low overflow-hidden cursor-pointer"
               >
-                <img
-                  alt={project.title}
-                  className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
-                  src={project.image}
-                  onError={(e) => {
-                    e.currentTarget.src = '/images/profile-hero.jpg';
-                  }}
-                />
+                {(() => {
+                  const coverImg = (Array.isArray(project.images) && project.images.length > 0)
+                    ? (typeof project.images[0] === 'string' ? project.images[0] : project.images[0]?.src)
+                    : (project.image || '/images/profile-hero.jpg');
+                  return (
+                    <img
+                      alt={project.title || 'Project cover'}
+                      loading="lazy"
+                      className="w-full h-full object-cover grayscale group-hover:grayscale-0 group-hover:scale-105 transition-all duration-500"
+                      src={coverImg}
+                      onError={(e) => {
+                        e.currentTarget.src = '/images/profile-hero.jpg';
+                      }}
+                    />
+                  );
+                })()}
                 <div
                   className={`absolute top-4 left-4 px-3 py-1 ${getCategoryBadgeClass(
                     project.category
                   )} border-2 border-on-surface font-label-caps font-bold text-[10px] uppercase shadow-sm`}
                 >
-                  {project.category}
+                  {project.category || 'Web'}
                 </div>
                 <div className="absolute top-4 right-4 px-2 py-0.5 bg-white border-2 border-on-surface font-label-caps font-bold text-[10px] uppercase">
-                  {project.year}
+                  {project.year || ''}
                 </div>
               </div>
 
@@ -154,32 +171,38 @@ export default function ProjectsSection() {
                 <span className="material-symbols-outlined text-[14px]">arrow_forward</span>
               </button>
 
-              {project.links && (project.links.github || project.links.demo) && (
-                <div className="flex gap-2">
-                  {project.links.github && (
-                    <a
-                      href={project.links.github}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-on-surface hover:text-primary transition-colors"
-                      title="GitHub Repository"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">code</span>
-                    </a>
-                  )}
-                  {project.links.demo && (
-                    <a
-                      href={project.links.demo}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="text-on-surface hover:text-brick-blue transition-colors"
-                      title="Live Demo"
-                    >
-                      <span className="material-symbols-outlined text-[18px]">open_in_new</span>
-                    </a>
-                  )}
-                </div>
-              )}
+              {(() => {
+                const repoUrl = project.repo_url || project.links?.github;
+                const demoUrl = project.demo_url || project.links?.demo;
+                if (!repoUrl && !demoUrl) return null;
+
+                return (
+                  <div className="flex gap-2">
+                    {repoUrl && (
+                      <a
+                        href={repoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-on-surface hover:text-primary transition-colors"
+                        title="GitHub Repository"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">code</span>
+                      </a>
+                    )}
+                    {demoUrl && (
+                      <a
+                        href={demoUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-on-surface hover:text-brick-blue transition-colors"
+                        title="Live Demo"
+                      >
+                        <span className="material-symbols-outlined text-[18px]">open_in_new</span>
+                      </a>
+                    )}
+                  </div>
+                );
+              })()}
             </div>
           </div>
         ))}

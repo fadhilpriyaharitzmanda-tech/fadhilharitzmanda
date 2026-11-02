@@ -89,6 +89,7 @@ export const updateSiteProfile = async (profileData) => {
 
 /**
  * Fetch published projects for public website
+ * Ordered by year desc, created_at desc, only published=true
  */
 export const fetchPublishedProjects = async () => {
   if (!isSupabaseConfigured) return defaultProjects;
@@ -97,53 +98,78 @@ export const fetchPublishedProjects = async () => {
       .from('projects')
       .select('*')
       .eq('published', true)
+      .order('year', { ascending: false })
       .order('created_at', { ascending: false });
 
-    if (error || !data || data.length === 0) {
+    if (error) {
+      console.error('fetchPublishedProjects error from Supabase:', error);
+      return defaultProjects;
+    }
+
+    if (!data || data.length === 0) {
       return defaultProjects;
     }
 
     // Map database rows to UI structure and enrich with rich modal fields if matched
     const dbProjects = data.map((p) => {
       const matched = defaultProjects.find(
-        (def) => def.title.toLowerCase().trim() === p.title.toLowerCase().trim()
+        (def) => def.title.toLowerCase().trim() === (p.title || '').toLowerCase().trim()
       );
+
+      const imagesArray = Array.isArray(p.images) && p.images.length > 0
+        ? p.images
+        : (matched?.images ? matched.images.map((img) => (typeof img === 'string' ? img : img.src)) : (matched?.image ? [matched.image] : []));
+
+      const coverImage = imagesArray[0] || matched?.image || '/images/profile-hero.jpg';
 
       return {
         id: p.id,
-        title: p.title,
+        title: p.title || '',
         description: p.description || matched?.description || '',
+        year: p.year || (p.created_at ? new Date(p.created_at).getFullYear() : (matched?.year ? parseInt(matched.year, 10) : 2026)),
+        category: p.category || matched?.category || 'Web',
+        problem_context: p.problem_context || matched?.problem || matched?.overview || '',
+        solution: p.solution || matched?.solution || '',
+        highlights: Array.isArray(p.highlights) && p.highlights.length > 0
+          ? p.highlights
+          : (matched?.features || []),
         tech: p.tech || matched?.technologies?.join(', ') || '',
         technologies: p.tech
           ? p.tech.split(',').map((t) => t.trim()).filter(Boolean)
-          : matched?.technologies || [],
-        category: matched?.category || 'Web',
-        year: p.created_at ? new Date(p.created_at).getFullYear().toString() : (matched?.year || '2026'),
-        image: p.image_url || matched?.image || '/images/profile-hero.jpg',
-        images: matched?.images || (p.image_url ? [{ src: p.image_url, caption: p.title }] : []),
-        overview: matched?.overview,
-        problem: matched?.problem,
-        solution: matched?.solution,
-        features: matched?.features,
-        role: matched?.role,
+          : (matched?.technologies || []),
+        repo_url: p.repo_url || matched?.links?.github || '',
+        demo_url: p.demo_url || matched?.links?.demo || '',
         links: {
           demo: p.demo_url || matched?.links?.demo || '',
           github: p.repo_url || matched?.links?.github || '',
         },
+        images: imagesArray,
+        image: coverImage,
         published: p.published,
         created_at: p.created_at,
       };
     });
 
-    // Ensure the 4 original projects from defaultProjects are always included
+    // Ensure the 4 original projects from defaultProjects are always included if not yet in database
     const existingTitles = new Set(dbProjects.map((p) => p.title.toLowerCase().trim()));
-    const missingDefaults = defaultProjects.filter(
-      (def) => !existingTitles.has(def.title.toLowerCase().trim())
-    );
+    const missingDefaults = defaultProjects
+      .filter((def) => !existingTitles.has(def.title.toLowerCase().trim()))
+      .map((def) => ({
+        ...def,
+        problem_context: def.problem || def.overview || '',
+        highlights: def.features || [],
+        repo_url: def.links?.github || '',
+        demo_url: def.links?.demo || '',
+        images: def.images ? def.images.map((img) => (typeof img === 'string' ? img : img.src)) : (def.image ? [def.image] : []),
+        tech: def.technologies ? def.technologies.join(', ') : '',
+      }));
 
-    return [...dbProjects, ...missingDefaults];
+    const combined = [...dbProjects, ...missingDefaults];
+    // Sort combined by year desc then created_at desc
+    combined.sort((a, b) => (b.year || 0) - (a.year || 0));
+    return combined;
   } catch (err) {
-    console.warn('fetchPublishedProjects exception:', err);
+    console.error('fetchPublishedProjects exception:', err);
     return defaultProjects;
   }
 };
@@ -155,19 +181,31 @@ export const importDefaultProjectsToSupabase = async () => {
   if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
 
   const current = await fetchAllProjectsAdmin();
-  const currentTitles = new Set((current || []).map((p) => p.title.toLowerCase().trim()));
+  const currentTitles = new Set((current || []).map((p) => (p.title || '').toLowerCase().trim()));
 
   const toInsert = defaultProjects
     .filter((def) => !currentTitles.has(def.title.toLowerCase().trim()))
-    .map((def) => ({
-      title: def.title,
-      description: def.description,
-      tech: def.technologies ? def.technologies.join(', ') : '',
-      demo_url: def.links?.demo || '',
-      repo_url: def.links?.github || '',
-      image_url: def.image || null,
-      published: true,
-    }));
+    .map((def) => {
+      const imagesArr = def.images
+        ? def.images.map((img) => (typeof img === 'string' ? img : img.src))
+        : (def.image ? [def.image] : []);
+
+      return {
+        id: crypto.randomUUID(),
+        title: def.title,
+        description: def.description || '',
+        year: parseInt(def.year, 10) || 2026,
+        category: def.category || 'Web',
+        problem_context: def.problem || def.overview || '',
+        solution: def.solution || '',
+        highlights: def.features || [],
+        tech: def.technologies ? def.technologies.join(', ') : '',
+        repo_url: def.links?.github || '',
+        demo_url: def.links?.demo || '',
+        images: imagesArr,
+        published: true,
+      };
+    });
 
   if (toInsert.length === 0) {
     return { count: 0, message: 'Semua 4 project bawaan sudah ada di database.' };
@@ -181,12 +219,14 @@ export const importDefaultProjectsToSupabase = async () => {
 
 /**
  * Fetch all projects for admin dashboard (published + drafts)
+ * Ordered by year desc, created_at desc
  */
 export const fetchAllProjectsAdmin = async () => {
   if (!isSupabaseConfigured) return [];
   const { data, error } = await supabase
     .from('projects')
     .select('*')
+    .order('year', { ascending: false })
     .order('created_at', { ascending: false });
 
   if (error) throw error;
@@ -194,45 +234,65 @@ export const fetchAllProjectsAdmin = async () => {
 };
 
 /**
- * Upload an image to the "project-images" public bucket
- * - Validates: image/* only, max 2MB
- * - Random filename: `${crypto.randomUUID()}.${ext}`
- * - Returns publicUrl
+ * Upload multiple images to the "project-images" public bucket
+ * Path: projects/<project-id>/<uuid>.<ext>
+ * - Validates: image/* only, max 2MB per file
+ * - Max 6 images per project
+ * - If partial upload fails, returns errors and does NOT store failed URLs
  */
-export const uploadProjectImage = async (file) => {
+export const uploadProjectImages = async (files, projectId) => {
   if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
-  if (!file) throw new Error('Pilih file gambar terlebih dahulu.');
+  if (!files || files.length === 0) return { urls: [], errors: [] };
 
-  if (!file.type.startsWith('image/')) {
-    throw new Error('Format file harus berupa gambar (image/*).');
+  const validUrls = [];
+  const errors = [];
+
+  for (const file of files) {
+    try {
+      if (!file.type.startsWith('image/')) {
+        errors.push(`"${file.name}" bukan format gambar yang valid.`);
+        continue;
+      }
+
+      const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
+      if (file.size > MAX_SIZE) {
+        errors.push(`"${file.name}" melebihi ukuran maksimal 2 MB.`);
+        continue;
+      }
+
+      const ext = file.name.split('.').pop() || 'jpg';
+      const imageId = crypto.randomUUID();
+      const storagePath = `projects/${projectId}/${imageId}.${ext.toLowerCase()}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('project-images')
+        .upload(storagePath, file, {
+          cacheControl: '3600',
+          upsert: false,
+        });
+
+      if (uploadError) {
+        errors.push(`Gagal mengunggah "${file.name}": ${uploadError.message}`);
+        continue;
+      }
+
+      const { data: publicUrlData } = supabase.storage
+        .from('project-images')
+        .getPublicUrl(storagePath);
+
+      if (publicUrlData?.publicUrl) {
+        validUrls.push(publicUrlData.publicUrl);
+      }
+    } catch (err) {
+      errors.push(`Error pada "${file.name}": ${err.message || 'Gagal'}`);
+    }
   }
 
-  const MAX_SIZE = 2 * 1024 * 1024; // 2 MB
-  if (file.size > MAX_SIZE) {
-    throw new Error('Ukuran gambar maksimal adalah 2 MB.');
-  }
-
-  const ext = file.name.split('.').pop() || 'jpg';
-  const randomName = `${crypto.randomUUID()}.${ext.toLowerCase()}`;
-
-  const { error: uploadError } = await supabase.storage
-    .from('project-images')
-    .upload(randomName, file, {
-      cacheControl: '3600',
-      upsert: false,
-    });
-
-  if (uploadError) throw uploadError;
-
-  const { data: publicUrlData } = supabase.storage
-    .from('project-images')
-    .getPublicUrl(randomName);
-
-  return publicUrlData.publicUrl;
+  return { urls: validUrls, errors };
 };
 
 /**
- * Delete image from project-images bucket
+ * Delete single image from project-images bucket
  */
 export const deleteProjectImage = async (imageUrl) => {
   if (!imageUrl) return;
@@ -244,7 +304,7 @@ export const deleteProjectImage = async (imageUrl) => {
       .from('project-images')
       .remove([path]);
     if (error) {
-      console.warn('Error deleting old image from storage:', error.message);
+      console.warn('Error deleting image from storage:', error.message);
     }
   } catch (err) {
     console.warn('deleteProjectImage exception:', err);
@@ -252,7 +312,29 @@ export const deleteProjectImage = async (imageUrl) => {
 };
 
 /**
- * Create a new project
+ * Delete multiple images from project-images bucket
+ */
+export const deleteProjectImages = async (imageUrls) => {
+  if (!Array.isArray(imageUrls) || imageUrls.length === 0) return;
+  const paths = imageUrls
+    .map((url) => extractStoragePath(url, 'project-images'))
+    .filter(Boolean);
+  if (paths.length === 0) return;
+
+  try {
+    const { error } = await supabase.storage
+      .from('project-images')
+      .remove(paths);
+    if (error) {
+      console.warn('Error deleting images from storage:', error.message);
+    }
+  } catch (err) {
+    console.warn('deleteProjectImages exception:', err);
+  }
+};
+
+/**
+ * Create a new project with expanded schema
  */
 export const createProject = async (projectData) => {
   if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
@@ -261,12 +343,18 @@ export const createProject = async (projectData) => {
   }
 
   const payload = {
+    id: projectData.id || crypto.randomUUID(),
     title: projectData.title.trim(),
     description: projectData.description || '',
+    year: parseInt(projectData.year, 10) || new Date().getFullYear(),
+    category: projectData.category || 'Web',
+    problem_context: projectData.problem_context || '',
+    solution: projectData.solution || '',
+    highlights: Array.isArray(projectData.highlights) ? projectData.highlights : [],
     tech: projectData.tech || '',
-    demo_url: projectData.demo_url || '',
     repo_url: projectData.repo_url || '',
-    image_url: projectData.image_url || null,
+    demo_url: projectData.demo_url || '',
+    images: Array.isArray(projectData.images) ? projectData.images : [],
     published: Boolean(projectData.published),
   };
 
@@ -281,9 +369,9 @@ export const createProject = async (projectData) => {
 };
 
 /**
- * Update project and delete old image if replaced
+ * Update project and delete any removed images from storage
  */
-export const updateProject = async (id, projectData, oldImageUrl) => {
+export const updateProject = async (id, projectData, deletedImageUrls = []) => {
   if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
   if (!projectData.title?.trim()) {
     throw new Error('Judul project wajib diisi.');
@@ -292,10 +380,15 @@ export const updateProject = async (id, projectData, oldImageUrl) => {
   const payload = {
     title: projectData.title.trim(),
     description: projectData.description || '',
+    year: parseInt(projectData.year, 10) || new Date().getFullYear(),
+    category: projectData.category || 'Web',
+    problem_context: projectData.problem_context || '',
+    solution: projectData.solution || '',
+    highlights: Array.isArray(projectData.highlights) ? projectData.highlights : [],
     tech: projectData.tech || '',
-    demo_url: projectData.demo_url || '',
     repo_url: projectData.repo_url || '',
-    image_url: projectData.image_url !== undefined ? projectData.image_url : null,
+    demo_url: projectData.demo_url || '',
+    images: Array.isArray(projectData.images) ? projectData.images : [],
     published: Boolean(projectData.published),
   };
 
@@ -308,18 +401,18 @@ export const updateProject = async (id, projectData, oldImageUrl) => {
 
   if (error) throw error;
 
-  // If image was changed, delete the old image from storage
-  if (oldImageUrl && projectData.image_url && oldImageUrl !== projectData.image_url) {
-    await deleteProjectImage(oldImageUrl);
+  // Clean up any deleted images from Storage
+  if (Array.isArray(deletedImageUrls) && deletedImageUrls.length > 0) {
+    await deleteProjectImages(deletedImageUrls);
   }
 
   return data;
 };
 
 /**
- * Delete project and remove its image from storage
+ * Delete project and remove all its images from storage
  */
-export const deleteProject = async (id, imageUrl) => {
+export const deleteProject = async (id, images = []) => {
   if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
 
   const { error } = await supabase
@@ -329,8 +422,10 @@ export const deleteProject = async (id, imageUrl) => {
 
   if (error) throw error;
 
-  if (imageUrl) {
-    await deleteProjectImage(imageUrl);
+  if (Array.isArray(images) && images.length > 0) {
+    await deleteProjectImages(images);
+  } else if (typeof images === 'string') {
+    await deleteProjectImage(images);
   }
 };
 

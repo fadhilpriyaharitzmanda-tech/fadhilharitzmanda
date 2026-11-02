@@ -7,7 +7,8 @@ import {
   updateProject,
   deleteProject,
   toggleProjectPublished,
-  uploadProjectImage,
+  uploadProjectImages,
+  deleteProjectImages,
   fetchAdminGuestbook,
   deleteAdminGuestbookMessage,
   fetchRatingsSummary,
@@ -17,6 +18,7 @@ import { useSiteData } from '../../context/SiteContext';
 import './AdminDashboard.css';
 
 const COLORS = ['#b3121a', '#1f4fb4', '#1a9e4a', '#c77a00'];
+const CATEGORIES = ['Web', 'Mobile', 'Game', 'Desktop', 'Lainnya'];
 
 const LegoLogo = ({ className = 'logo' }) => (
   <svg className={className} viewBox="0 0 64 64" aria-hidden="true">
@@ -105,19 +107,25 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     }, 2200);
   };
 
-  // Project Modal State
+  // Project Modal State with expanded schema
   const [modalOpen, setModalOpen] = useState(false);
   const [editingProject, setEditingProject] = useState(null);
   const [projectForm, setProjectForm] = useState({
+    id: '',
+    year: new Date().getFullYear(),
+    category: 'Web',
     title: '',
     description: '',
+    problem_context: '',
+    solution: '',
+    highlightsText: '',
     tech: '',
-    demo_url: '',
     repo_url: '',
-    image_url: '',
+    demo_url: '',
+    images: [],
     published: true,
   });
-  const [projectFile, setProjectFile] = useState(null);
+  const [deletedImagesOnEdit, setDeletedImagesOnEdit] = useState([]);
   const [projectUploading, setProjectUploading] = useState(false);
   const [projectModalError, setProjectModalError] = useState('');
   const [importing, setImporting] = useState(false);
@@ -225,7 +233,11 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     if (!window.confirm(`Hapus project "${proj.title}"?`)) return;
 
     try {
-      await deleteProject(proj.id, proj.image_url);
+      const imgList = Array.isArray(proj.images) && proj.images.length > 0
+        ? proj.images
+        : (proj.image ? [proj.image] : []);
+
+      await deleteProject(proj.id, imgList);
       setProjectsList((prev) => prev.filter((item) => item.id !== proj.id));
       await refreshSiteData();
       showToast('Project berhasil dihapus!');
@@ -235,80 +247,198 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     }
   };
 
-  // Open Project Modal
+  // Open Project Modal - Add New
   const openNewProjectModal = () => {
     setEditingProject(null);
+    setDeletedImagesOnEdit([]);
     setProjectForm({
+      id: crypto.randomUUID(),
+      year: new Date().getFullYear(),
+      category: 'Web',
       title: '',
       description: '',
+      problem_context: '',
+      solution: '',
+      highlightsText: '',
       tech: '',
-      demo_url: '',
       repo_url: '',
-      image_url: '',
+      demo_url: '',
+      images: [],
       published: true,
     });
-    setProjectFile(null);
     setProjectModalError('');
     setModalOpen(true);
   };
 
+  // Open Project Modal - Edit Existing
   const openEditProjectModal = (proj) => {
     setEditingProject(proj);
+    setDeletedImagesOnEdit([]);
+
+    const imgList = Array.isArray(proj.images) && proj.images.length > 0
+      ? [...proj.images]
+      : (proj.image ? [proj.image] : []);
+
+    const hl = Array.isArray(proj.highlights)
+      ? proj.highlights.join('\n')
+      : (Array.isArray(proj.features) ? proj.features.join('\n') : '');
+
     setProjectForm({
+      id: proj.id,
+      year: proj.year || (proj.created_at ? new Date(proj.created_at).getFullYear() : new Date().getFullYear()),
+      category: proj.category || 'Web',
       title: proj.title || '',
       description: proj.description || '',
-      tech: proj.tech || '',
-      demo_url: proj.demo_url || '',
-      repo_url: proj.repo_url || '',
-      image_url: proj.image_url || '',
-      published: Boolean(proj.published),
+      problem_context: proj.problem_context || proj.problem || proj.overview || '',
+      solution: proj.solution || '',
+      highlightsText: hl,
+      tech: proj.tech || (Array.isArray(proj.technologies) ? proj.technologies.join(', ') : ''),
+      repo_url: proj.repo_url || proj.links?.github || '',
+      demo_url: proj.demo_url || proj.links?.demo || '',
+      images: imgList,
+      published: proj.published !== undefined ? Boolean(proj.published) : true,
     });
-    setProjectFile(null);
     setProjectModalError('');
     setModalOpen(true);
   };
 
-  // Save Project (Create or Edit)
-  const handleSaveProjectModal = async (e) => {
-    e.preventDefault();
+  // Handle uploading multiple image files (max 6, 2 MB each, image/* only)
+  const handleImageFilesChange = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
     setProjectModalError('');
 
-    if (!projectForm.title.trim()) {
-      setProjectModalError('Judul project wajib diisi.');
+    const currentCount = projectForm.images.length;
+    if (currentCount >= 6) {
+      setProjectModalError('Maksimal 6 gambar per project.');
+      e.target.value = '';
+      return;
+    }
+
+    if (currentCount + files.length > 6) {
+      setProjectModalError(`Maksimal 6 gambar. Saat ini sudah ada ${currentCount} gambar (hanya dapat menambah ${6 - currentCount} lagi).`);
+      e.target.value = '';
       return;
     }
 
     setProjectUploading(true);
     try {
-      let finalImageUrl = projectForm.image_url;
-
-      // If user selected a new file, upload to Supabase Storage project-images bucket
-      if (projectFile) {
-        if (!projectFile.type.startsWith('image/')) {
-          throw new Error('Format file harus berupa gambar (image/*).');
-        }
-        if (projectFile.size > 2 * 1024 * 1024) {
-          throw new Error('Ukuran gambar maksimal adalah 2 MB.');
-        }
-        finalImageUrl = await uploadProjectImage(projectFile);
+      const projectId = projectForm.id || crypto.randomUUID();
+      if (!projectForm.id) {
+        setProjectForm((prev) => ({ ...prev, id: projectId }));
       }
 
+      const { urls, errors } = await uploadProjectImages(files, projectId);
+
+      if (errors.length > 0) {
+        setProjectModalError(errors.join(' | '));
+      }
+
+      if (urls.length > 0) {
+        setProjectForm((prev) => ({
+          ...prev,
+          images: [...prev.images, ...urls].slice(0, 6),
+        }));
+      }
+    } catch (err) {
+      console.error('Upload project images error:', err);
+      setProjectModalError(err.message || 'Gagal mengunggah gambar.');
+    } finally {
+      setProjectUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  // Set an image as cover (move to index 0)
+  const handleSetCover = (index) => {
+    if (index <= 0 || index >= projectForm.images.length) return;
+    setProjectForm((prev) => {
+      const copy = [...prev.images];
+      const [moved] = copy.splice(index, 1);
+      copy.unshift(moved);
+      return { ...prev, images: copy };
+    });
+  };
+
+  // Delete an image from projectForm (mark for deletion from storage on save)
+  const handleDeleteImageFromProject = (index) => {
+    setProjectForm((prev) => {
+      const targetUrl = prev.images[index];
+      if (targetUrl) {
+        setDeletedImagesOnEdit((d) => [...d, targetUrl]);
+      }
+      const copy = prev.images.filter((_, idx) => idx !== index);
+      return { ...prev, images: copy };
+    });
+  };
+
+  // Save Project (Create or Edit with expanded validation)
+  const handleSaveProjectModal = async (e) => {
+    e.preventDefault();
+    setProjectModalError('');
+
+    const title = projectForm.title.trim();
+    if (!title) {
+      setProjectModalError('Judul project wajib diisi.');
+      return;
+    }
+
+    const yearNum = parseInt(projectForm.year, 10);
+    if (isNaN(yearNum) || yearNum < 2000 || yearNum > 2100) {
+      setProjectModalError('Tahun harus antara 2000 dan 2100.');
+      return;
+    }
+
+    if (projectForm.repo_url?.trim() && !/^https?:\/\//i.test(projectForm.repo_url.trim())) {
+      setProjectModalError('Link GitHub repo harus diawali http:// atau https://');
+      return;
+    }
+
+    if (projectForm.demo_url?.trim() && !/^https?:\/\//i.test(projectForm.demo_url.trim())) {
+      setProjectModalError('Link demo harus diawali http:// atau https://');
+      return;
+    }
+
+    const hl = projectForm.highlightsText
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (hl.length > 10) {
+      setProjectModalError('Maksimal 10 key highlights.');
+      return;
+    }
+
+    setProjectUploading(true);
+    try {
+      const payload = {
+        id: projectForm.id,
+        title,
+        description: projectForm.description.trim(),
+        year: yearNum,
+        category: projectForm.category || 'Web',
+        problem_context: projectForm.problem_context.trim(),
+        solution: projectForm.solution.trim(),
+        highlights: hl,
+        tech: projectForm.tech.trim(),
+        repo_url: projectForm.repo_url.trim(),
+        demo_url: projectForm.demo_url.trim(),
+        images: projectForm.images,
+        published: Boolean(projectForm.published),
+      };
+
       if (editingProject) {
-        const oldImage = editingProject.image_url;
         const updated = await updateProject(
           editingProject.id,
-          { ...projectForm, image_url: finalImageUrl },
-          oldImage
+          payload,
+          deletedImagesOnEdit
         );
         setProjectsList((prev) =>
           prev.map((item) => (item.id === editingProject.id ? updated : item))
         );
         showToast('Project berhasil diperbarui!');
       } else {
-        const created = await createProject({
-          ...projectForm,
-          image_url: finalImageUrl,
-        });
+        const created = await createProject(payload);
         setProjectsList((prev) => [created, ...prev]);
         showToast('Project baru berhasil ditambahkan!');
       }
@@ -519,24 +649,32 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                   {projectsList.length === 0 ? (
                     <p className="empty">Belum ada project.</p>
                   ) : (
-                    projectsList.slice(0, 3).map((p, idx) => (
-                      <div className="row" key={p.id}>
-                        <span className="th" style={{ background: COLORS[idx % COLORS.length] }}>
-                          {p.image_url ? (
-                            <img src={p.image_url} alt={p.title} />
-                          ) : (
-                            (p.title || '?')[0].toUpperCase()
-                          )}
-                        </span>
-                        <div className="tx">
-                          <b>
-                            {p.title}
-                            {!p.published && <span className="tg">DRAFT</span>}
-                          </b>
-                          <p>{p.description || 'Tidak ada deskripsi'}</p>
+                    projectsList.slice(0, 3).map((p, idx) => {
+                      const coverImg = (p.images && p.images.length > 0) ? p.images[0] : (p.image_url || p.image || null);
+                      return (
+                        <div className="row" key={p.id}>
+                          <span className="th" style={{ background: COLORS[idx % COLORS.length] }}>
+                            {coverImg ? (
+                              <img src={coverImg} alt={p.title} loading="lazy" />
+                            ) : (
+                              (p.title || '?')[0].toUpperCase()
+                            )}
+                          </span>
+                          <div className="tx">
+                            <b>
+                              {p.title}
+                              {p.year && (
+                                <span className="tg" style={{ background: '#1f4fb4' }}>
+                                  {p.year} · {(p.category || 'Web').toUpperCase()}
+                                </span>
+                              )}
+                              {!p.published && <span className="tg">DRAFT</span>}
+                            </b>
+                            <p>{p.description || 'Tidak ada deskripsi'}</p>
+                          </div>
                         </div>
-                      </div>
-                    ))
+                      );
+                    })
                   )}
                 </div>
 
@@ -561,7 +699,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                       <div className="row" key={m.id}>
                         <span className="av" style={{ background: COLORS[idx % COLORS.length] }}>
                           {m.avatar_url ? (
-                            <img src={m.avatar_url} alt={m.name} />
+                            <img src={m.avatar_url} alt={m.name} loading="lazy" />
                           ) : (
                             (m.name || '?')[0].toUpperCase()
                           )}
@@ -709,60 +847,68 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                   Belum ada project. Klik tombol "+ Tambah project" di atas untuk membuat yang pertama.
                 </p>
               ) : (
-                projectsList.map((p, idx) => (
-                  <div className="row" key={p.id}>
-                    <span className="th" style={{ background: COLORS[idx % COLORS.length] }}>
-                      {p.image_url ? (
-                        <img src={p.image_url} alt={p.title} />
-                      ) : (
-                        (p.title || '?')[0].toUpperCase()
-                      )}
-                    </span>
-                    <div className="tx">
-                      <b>
-                        {p.title}
-                        {!p.published && <span className="tg">DRAFT</span>}
-                      </b>
-                      <p>{p.description || 'Tidak ada deskripsi'}</p>
-                      <div className="chips">{renderChips(p.tech)}</div>
-                    </div>
+                projectsList.map((p, idx) => {
+                  const coverImg = (p.images && p.images.length > 0) ? p.images[0] : (p.image_url || p.image || null);
+                  return (
+                    <div className="row" key={p.id}>
+                      <span className="th" style={{ background: COLORS[idx % COLORS.length] }}>
+                        {coverImg ? (
+                          <img src={coverImg} alt={p.title} loading="lazy" />
+                        ) : (
+                          (p.title || '?')[0].toUpperCase()
+                        )}
+                      </span>
+                      <div className="tx">
+                        <b>
+                          {p.title}
+                          {p.year && (
+                            <span className="tg" style={{ background: '#1f4fb4' }}>
+                              {p.year} · {(p.category || 'Web').toUpperCase()}
+                            </span>
+                          )}
+                          {!p.published && <span className="tg">DRAFT</span>}
+                        </b>
+                        <p>{p.description || 'Tidak ada deskripsi'}</p>
+                        <div className="chips">{renderChips(p.tech)}</div>
+                      </div>
 
-                    {/* Toggle Switch */}
-                    <button
-                      type="button"
-                      className="sw"
-                      role="switch"
-                      aria-checked={p.published}
-                      onClick={() => handleTogglePublish(p)}
-                      title={p.published ? 'Klik untuk sembunyikan' : 'Klik untuk tampilkan'}
-                    >
-                      <i />
-                      {p.published ? 'Tampil' : 'Draft'}
-                    </button>
-
-                    {/* Actions */}
-                    <div className="acts">
+                      {/* Toggle Switch */}
                       <button
                         type="button"
-                        className="ib"
-                        onClick={() => openEditProjectModal(p)}
-                        aria-label={`Edit ${p.title}`}
-                        title="Edit Project"
+                        className="sw"
+                        role="switch"
+                        aria-checked={p.published}
+                        onClick={() => handleTogglePublish(p)}
+                        title={p.published ? 'Klik untuk sembunyikan' : 'Klik untuk tampilkan'}
                       >
-                        <Icon name="edit" />
+                        <i />
+                        {p.published ? 'Tampil' : 'Draft'}
                       </button>
-                      <button
-                        type="button"
-                        className="ib d"
-                        onClick={() => handleDeleteProject(p)}
-                        aria-label={`Hapus ${p.title}`}
-                        title="Hapus Project"
-                      >
-                        <Icon name="del" />
-                      </button>
+
+                      {/* Actions */}
+                      <div className="acts">
+                        <button
+                          type="button"
+                          className="ib"
+                          onClick={() => openEditProjectModal(p)}
+                          aria-label={`Edit ${p.title}`}
+                          title="Edit Project"
+                        >
+                          <Icon name="edit" />
+                        </button>
+                        <button
+                          type="button"
+                          className="ib d"
+                          onClick={() => handleDeleteProject(p)}
+                          aria-label={`Hapus ${p.title}`}
+                          title="Hapus Project"
+                        >
+                          <Icon name="del" />
+                        </button>
+                      </div>
                     </div>
-                  </div>
-                ))
+                  );
+                })
               )}
             </div>
           )}
@@ -792,7 +938,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                     <div className="row" key={m.id}>
                       <span className="av" style={{ background: COLORS[idx % COLORS.length] }}>
                         {m.avatar_url ? (
-                          <img src={m.avatar_url} alt={m.name} />
+                          <img src={m.avatar_url} alt={m.name} loading="lazy" />
                         ) : (
                           (m.name || '?')[0].toUpperCase()
                         )}
@@ -832,7 +978,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
         </main>
       </div>
 
-      {/* Project Modal Dialog (Add / Edit) */}
+      {/* Project Modal Dialog (Add / Edit) - Expanded Schema matching admin-v2.html */}
       {modalOpen && (
         <div className="lego-modal-overlay" onClick={() => !projectUploading && setModalOpen(false)}>
           <div
@@ -844,6 +990,35 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
             <h2>{editingProject ? 'Edit project' : 'Project baru'}</h2>
 
             <form onSubmit={handleSaveProjectModal}>
+              <div className="g2">
+                <div>
+                  <label htmlFor="p0">Tahun *</label>
+                  <input
+                    id="p0"
+                    type="number"
+                    min="2000"
+                    max="2100"
+                    required
+                    value={projectForm.year}
+                    onChange={(e) => setProjectForm({ ...projectForm, year: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="pc">Kategori *</label>
+                  <select
+                    id="pc"
+                    value={projectForm.category}
+                    onChange={(e) => setProjectForm({ ...projectForm, category: e.target.value })}
+                  >
+                    {CATEGORIES.map((c) => (
+                      <option key={c} value={c}>
+                        {c}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
               <label htmlFor="p1">Judul *</label>
               <input
                 id="p1"
@@ -855,36 +1030,53 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 autoFocus
               />
 
-              <label htmlFor="p2">Deskripsi</label>
+              <label htmlFor="p2">Deskripsi singkat (tampil di kartu)</label>
               <textarea
                 id="p2"
-                maxLength={400}
+                maxLength={300}
                 value={projectForm.description}
                 onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                placeholder="Penjelasan ringkas tentang project ini..."
+                placeholder="Penjelasan ringkas tentang project untuk kartu depan..."
               />
 
-              <label htmlFor="p3">Teknologi (pisahkan dengan koma)</label>
+              <label htmlFor="pp">Problem context</label>
+              <textarea
+                id="pp"
+                maxLength={600}
+                value={projectForm.problem_context}
+                onChange={(e) => setProjectForm({ ...projectForm, problem_context: e.target.value })}
+                placeholder="Latar belakang masalah atau tantangan yang dihadapi..."
+              />
+
+              <label htmlFor="ps">Engineered solution</label>
+              <textarea
+                id="ps"
+                maxLength={600}
+                value={projectForm.solution}
+                onChange={(e) => setProjectForm({ ...projectForm, solution: e.target.value })}
+                placeholder="Solusi teknis dan rekayasa yang dikembangkan..."
+              />
+
+              <label htmlFor="p8">Key highlights (satu poin per baris, maksimal 10)</label>
+              <textarea
+                id="p8"
+                rows={5}
+                value={projectForm.highlightsText}
+                onChange={(e) => setProjectForm({ ...projectForm, highlightsText: e.target.value })}
+                placeholder="Poin fitur utama 1&#10;Poin fitur utama 2&#10;Poin fitur utama 3"
+              />
+
+              <label htmlFor="p3">Technologies (pisahkan dengan koma)</label>
               <input
                 id="p3"
                 value={projectForm.tech}
                 onChange={(e) => setProjectForm({ ...projectForm, tech: e.target.value })}
-                placeholder="React, Tailwind, Supabase"
+                placeholder="React.js, Tailwind CSS, Supabase"
               />
 
               <div className="g2">
                 <div>
-                  <label htmlFor="p4">Link demo</label>
-                  <input
-                    id="p4"
-                    type="url"
-                    value={projectForm.demo_url}
-                    onChange={(e) => setProjectForm({ ...projectForm, demo_url: e.target.value })}
-                    placeholder="https://..."
-                  />
-                </div>
-                <div>
-                  <label htmlFor="p5">Link repo</label>
+                  <label htmlFor="p5">GitHub repo (diawali https://)</label>
                   <input
                     id="p5"
                     type="url"
@@ -893,39 +1085,62 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                     placeholder="https://github.com/..."
                   />
                 </div>
+                <div>
+                  <label htmlFor="p4">Link demo (opsional)</label>
+                  <input
+                    id="p4"
+                    type="url"
+                    value={projectForm.demo_url}
+                    onChange={(e) => setProjectForm({ ...projectForm, demo_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
               </div>
 
-              <label htmlFor="p6">Gambar Project</label>
+              <label htmlFor="p9">
+                Gambar ({projectForm.images.length}/6)
+              </label>
               <input
-                id="p6"
+                id="p9"
                 type="file"
                 accept="image/*"
-                onChange={(e) => setProjectFile(e.target.files?.[0] || null)}
+                multiple
+                disabled={projectUploading || projectForm.images.length >= 6}
+                onChange={handleImageFilesChange}
               />
-              <p className="note">Format: image/* (PNG, JPG, WebP), maksimal 2 MB. Diunggah ke Supabase Storage.</p>
+              <p className="note">
+                Maksimal 6 gambar, 2 MB per gambar. Gambar pertama otomatis jadi COVER. Klik tombol ★ untuk mengubah gambar cover.
+              </p>
 
-              {/* Image Preview if available */}
-              {(projectFile || projectForm.image_url) && (
-                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                  <div
-                    style={{
-                      width: '60px',
-                      height: '60px',
-                      border: '2px solid #141414',
-                      borderRadius: '8px',
-                      overflow: 'hidden',
-                      background: '#eee',
-                    }}
-                  >
-                    <img
-                      src={projectFile ? URL.createObjectURL(projectFile) : projectForm.image_url}
-                      alt="Preview"
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </div>
-                  <span style={{ fontSize: '0.8rem', color: '#555' }}>
-                    {projectFile ? `File baru: ${projectFile.name}` : 'Gambar tersimpan saat ini'}
-                  </span>
+              {/* Multiple Images Grid */}
+              {projectForm.images.length > 0 && (
+                <div className="igrid">
+                  {projectForm.images.map((src, i) => (
+                    <div className="im" key={src || i}>
+                      <img src={src} alt={`Gambar ${i + 1}`} loading="lazy" />
+                      {i === 0 && <span className="cv">COVER</span>}
+                      <div className="ia">
+                        {i > 0 && (
+                          <button
+                            type="button"
+                            className="ib"
+                            onClick={() => handleSetCover(i)}
+                            title={`Jadikan gambar ${i + 1} sebagai cover`}
+                          >
+                            ★
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="ib d"
+                          onClick={() => handleDeleteImageFromProject(i)}
+                          title={`Hapus gambar ${i + 1}`}
+                        >
+                          <Icon name="del" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
 

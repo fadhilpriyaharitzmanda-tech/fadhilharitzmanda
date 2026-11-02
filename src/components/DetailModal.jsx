@@ -98,8 +98,15 @@ export default function DetailModal({ isOpen, onClose, data, type }) {
       ? data.category?.toUpperCase() || 'PROJECT'
       : 'PORTFOLIO';
 
-  const highlights = data.details || data.responsibilities || data.features || [];
-  const techArsenal = data.technologies || [];
+  const highlights = data.highlights || data.details || data.responsibilities || data.features || [];
+  const techArsenal = Array.isArray(data.technologies) && data.technologies.length > 0
+    ? data.technologies
+    : (data.tech ? data.tech.split(',').map((t) => t.trim()).filter(Boolean) : []);
+
+  const repoUrl = data.repo_url || data.links?.github;
+  const demoUrl = data.demo_url || data.links?.demo;
+  const problemContext = data.problem_context || data.problem;
+  const solution = data.solution;
 
   return (
     <div
@@ -173,6 +180,7 @@ export default function DetailModal({ isOpen, onClose, data, type }) {
                   <img
                     src={currentImgSrc}
                     alt={currentImgCaption || title}
+                    loading="lazy"
                     className="w-full h-full object-contain max-h-[340px] rounded transition-all duration-300 pointer-events-none"
                     onError={(e) => {
                       e.currentTarget.src = '/images/profile-hero.jpg';
@@ -202,33 +210,63 @@ export default function DetailModal({ isOpen, onClose, data, type }) {
                 </div>
 
                 {imageList.length > 1 && (
-                  <div className="flex items-center gap-3 mt-2">
-                    <button
-                      type="button"
-                      onClick={handlePrev}
-                      className="px-3 py-1 bg-white border-2 border-on-surface text-on-surface text-xs font-bold uppercase brick-shadow hover:bg-brick-yellow cursor-pointer"
-                    >
-                      ← PREV
-                    </button>
-                    <div className="flex gap-1.5">
-                      {imageList.map((_, dotIdx) => (
-                        <button
-                          key={dotIdx}
-                          type="button"
-                          onClick={() => setActiveImgIndex(dotIdx)}
-                          className={`w-2.5 h-2.5 rounded-full border border-white transition-all cursor-pointer ${
-                            activeImgIndex === dotIdx ? 'bg-brick-yellow w-5' : 'bg-white/40'
-                          }`}
-                        />
-                      ))}
+                  <div className="w-full flex flex-col items-center gap-2 mt-2">
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={handlePrev}
+                        className="px-3 py-1 bg-white border-2 border-on-surface text-on-surface text-xs font-bold uppercase brick-shadow hover:bg-brick-yellow cursor-pointer"
+                      >
+                        ← PREV
+                      </button>
+                      <div className="flex gap-1.5">
+                        {imageList.map((_, dotIdx) => (
+                          <button
+                            key={dotIdx}
+                            type="button"
+                            onClick={() => setActiveImgIndex(dotIdx)}
+                            className={`w-2.5 h-2.5 rounded-full border border-white transition-all cursor-pointer ${
+                              activeImgIndex === dotIdx ? 'bg-brick-yellow w-5' : 'bg-white/40'
+                            }`}
+                            aria-label={`Pindah ke gambar ${dotIdx + 1}`}
+                          />
+                        ))}
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleNext}
+                        className="px-3 py-1 bg-white border-2 border-on-surface text-on-surface text-xs font-bold uppercase brick-shadow hover:bg-brick-yellow cursor-pointer"
+                      >
+                        NEXT →
+                      </button>
                     </div>
-                    <button
-                      type="button"
-                      onClick={handleNext}
-                      className="px-3 py-1 bg-white border-2 border-on-surface text-on-surface text-xs font-bold uppercase brick-shadow hover:bg-brick-yellow cursor-pointer"
-                    >
-                      NEXT →
-                    </button>
+
+                    {/* Thumbnail previews */}
+                    <div className="flex flex-wrap justify-center items-center gap-1.5 max-w-full overflow-x-auto py-1">
+                      {imageList.map((item, thumbIdx) => {
+                        const thumbSrc = typeof item === 'string' ? item : item?.src;
+                        return (
+                          <button
+                            key={thumbIdx}
+                            type="button"
+                            onClick={() => setActiveImgIndex(thumbIdx)}
+                            className={`w-11 h-8 rounded border-2 overflow-hidden transition-all cursor-pointer flex-shrink-0 ${
+                              activeImgIndex === thumbIdx
+                                ? 'border-brick-yellow scale-105 shadow-[2px_2px_0px_#141414]'
+                                : 'border-white/40 opacity-60 hover:opacity-100'
+                            }`}
+                            title={`Lihat gambar ${thumbIdx + 1}`}
+                          >
+                            <img
+                              src={thumbSrc}
+                              alt={`Thumbnail ${thumbIdx + 1}`}
+                              loading="lazy"
+                              className="w-full h-full object-cover"
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                 )}
               </div>
@@ -286,20 +324,20 @@ export default function DetailModal({ isOpen, onClose, data, type }) {
               </div>
             )}
 
-            {data.problem && (
+            {problemContext && (
               <div className="flex flex-col gap-2">
                 <h4 className="font-label-caps text-xs font-bold text-primary uppercase">Problem Context:</h4>
                 <p className="font-body-md text-on-surface text-xs md:text-[13px] leading-relaxed">
-                  {data.problem}
+                  {problemContext}
                 </p>
               </div>
             )}
 
-            {data.solution && (
+            {solution && (
               <div className="flex flex-col gap-2">
                 <h4 className="font-label-caps text-xs font-bold text-brick-blue uppercase">Engineered Solution:</h4>
                 <p className="font-body-md text-on-surface text-xs md:text-[13px] leading-relaxed">
-                  {data.solution}
+                  {solution}
                 </p>
               </div>
             )}
@@ -349,11 +387,11 @@ export default function DetailModal({ isOpen, onClose, data, type }) {
               </div>
             )}
 
-            {data.links && (data.links.github || data.links.demo) && (
+            {(repoUrl || demoUrl) && (
               <div className="flex flex-wrap gap-3 pt-4 border-t-2 border-on-surface mt-auto">
-                {data.links.github && (
+                {repoUrl && (
                   <a
-                    href={data.links.github}
+                    href={repoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-on-surface text-white font-button-text text-xs uppercase brick-shadow hover:bg-primary transition-colors cursor-pointer"
@@ -362,14 +400,14 @@ export default function DetailModal({ isOpen, onClose, data, type }) {
                     <span className="material-symbols-outlined text-[14px]">open_in_new</span>
                   </a>
                 )}
-                {data.links.demo && (
+                {demoUrl && (
                   <a
-                    href={data.links.demo}
+                    href={demoUrl}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="inline-flex items-center gap-1.5 px-4 py-2 bg-brick-yellow text-on-surface border-2 border-on-surface font-button-text text-xs uppercase brick-shadow hover:bg-yellow-300 transition-colors cursor-pointer"
                   >
-                    <span>{data.links.demo.includes('figma.com') ? 'FIGMA PROTOTYPE' : 'LIVE DEMO'}</span>
+                    <span>{demoUrl.includes('figma.com') ? 'FIGMA PROTOTYPE' : 'LIVE DEMO'}</span>
                     <span className="material-symbols-outlined text-[14px]">launch</span>
                   </a>
                 )}
