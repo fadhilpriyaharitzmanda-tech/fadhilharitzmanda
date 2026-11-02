@@ -791,7 +791,7 @@ export const fetchPublishedCertifications = async () => {
       return defaultCertifications;
     }
 
-    return data.map((cert) => ({
+    const mappedDbCerts = data.map((cert) => ({
       id: cert.id,
       title: cert.title || '',
       name: cert.title || '',
@@ -805,6 +805,40 @@ export const fetchPublishedCertifications = async () => {
       published: cert.published,
       created_at: cert.created_at,
     }));
+
+    // If database has fewer certifications than default (e.g. 1 out of 3), enrich with missing defaults
+    const dbTitles = new Set(mappedDbCerts.map((c) => c.title.toLowerCase().trim()));
+    const missingDefaults = defaultCertifications
+      .filter((def) => !dbTitles.has((def.name || def.title || '').toLowerCase().trim()))
+      .map((def) => {
+        const dateMap = {
+          'cert-lks': '2026-02-18',
+          'cert-jambore-kabupaten': '2026-01-15',
+          'cert-ozeva': '2026-05-09',
+        };
+        const rawDate = dateMap[def.id] || '2026-01-01';
+        const imgs = Array.isArray(def.images)
+          ? def.images.map((img) => (typeof img === 'string' ? img : img.src))
+          : [];
+        return {
+          id: def.id,
+          title: def.name || def.title || '',
+          name: def.name || def.title || '',
+          issuer: def.issuer || '',
+          issued_on: rawDate,
+          date: formatCertificationDate(rawDate),
+          description: def.description || '',
+          credential_id: def.credentialId || '',
+          credentialId: def.credentialId || '',
+          images: imgs,
+          published: true,
+          created_at: rawDate,
+        };
+      });
+
+    return [...mappedDbCerts, ...missingDefaults].sort(
+      (a, b) => (b.issued_on || '').localeCompare(a.issued_on || '')
+    );
   } catch (err) {
     console.error('fetchPublishedCertifications exception:', err);
     return defaultCertifications;

@@ -236,7 +236,11 @@ P.cert='<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>';
 IC.exp='exp';IC.cert='cert';
 S.xid=50;
 S.exps=[{id:21,date:'2026-02',t:'Juara II - LKS Cyber Security Tingkat Kabupaten 2026',org:'LKS SMK Tingkat Kabupaten Karanganyar',loc:'Karanganyar, Jawa Tengah',d:'Meraih Juara II pada Seleksi Lomba Keterampilan Siswa (LKS) Tingkat Kabupaten Karanganyar Tahun 2026 pada Mata Lomba Teknologi Keamanan Siber (Cyber Security), menguji analisis pertahanan jaringan dan mitigasi insiden siber.',hl:['Meraih prestasi Juara II Tingkat Kabupaten Karanganyar bidang Cyber Security.','Melakukan analisis keamanan jaringan, pemindaian kerentanan (vulnerability assessment), dan penanganan insiden digital.','Mempraktikkan teknik mitigasi dan pertahanan siber sesuai standar industri.'],tech:'Cyber Security, Network Defense, Linux, Vulnerability Assessment',imgs:[],pub:true}];
-S.certs=[{id:31,date:'2026-02-18',t:'Sertifikat Juara II LKS Cyber Security 2026',issuer:'Dinas Pendidikan Wilayah VI Prov. Jawa Tengah',d:'Sertifikat resmi penghargaan atas prestasi meraih Juara II Mata Lomba Teknologi Keamanan Siber (Cyber Security) pada Seleksi Lomba Keterampilan Siswa (LKS) Tingkat Kabupaten Karanganyar Tahun 2026.',cid:'400.3.8.6/75/2026',imgs:[],pub:true}];
+S.certs=[
+  {id:31,date:'2026-02-18',t:'Sertifikat Juara II LKS Cyber Security 2026',issuer:'Dinas Pendidikan Wilayah VI Prov. Jawa Tengah',d:'Sertifikat resmi penghargaan atas prestasi meraih Juara II Mata Lomba Teknologi Keamanan Siber (Cyber Security) pada Seleksi Lomba Keterampilan Siswa (LKS) Tingkat Kabupaten Karanganyar Tahun 2026.',cid:'400.3.8.6/75/2026',imgs:['/images/certificates/sertifikat-lks-cyber-security.jpg'],pub:true},
+  {id:32,date:'2026-01-15',t:'Piagam Juara 1 Lomba Piranti Lunak Jambore Pemuda',issuer:'Pemerintah Kabupaten Karanganyar',d:'Piagam Penghargaan Juara 1 Kategori Lomba Piranti Lunak pada Kegiatan Jambore Pemuda Kabupaten Karanganyar Tahun 2026.',cid:'JAMBORE-PL-2026',imgs:['/images/certificates/sertifikat-jambore-kabupaten.jpg'],pub:true},
+  {id:33,date:'2026-05-09',t:'Sertifikat Training Coding Kelas Rookie (Beginner)',issuer:'Vali Coding',d:'Sertifikat kelulusan peserta training atas partisipasi aktif dalam program Training Coding Kelas Rookie (Beginner) periode 21 Februari 2026 – 09 Mei 2026 oleh Principal Instructor Tan Gay O, MSc.',cid:'P20260002',imgs:['/images/certificates/sertifikat-vali-coding.jpg'],pub:true}
+];
 const fmtM=s=>s?new Date(s+'-01T00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}):'';
 const fmtD=s=>s?new Date(s+'T00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'';
 function itemRow(k,x){
@@ -250,7 +254,7 @@ render=function(){
   _r();
   if(!S.user||(S.view!=='exp'&&S.view!=='cert'))return;
   const k=S.view,L=k==='exp'?S.exps:S.certs;
-  $('.ph').insertAdjacentHTML('beforeend',`<button class="btn" data-a="new2" data-k="${k}">${ic('plus')}${k==='exp'?'Tambah experience':'Tambah sertifikat'}</button>`);
+  $('.ph').insertAdjacentHTML('beforeend',`<button type="button" class="btn" data-a="new2" data-k="${k}">${ic('plus')}${k==='exp'?'Tambah experience':'Tambah sertifikat'}</button>`);
   $('#ct').innerHTML=`<div class="card">${L.map(x=>itemRow(k,x)).join('')||'<p class="empty">Belum ada data. Klik tombol tambah untuk membuat yang pertama.</p>'}</div>`;
 };
 function form2(k,p){

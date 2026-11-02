@@ -319,8 +319,8 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
       }
 
       let currentCerts = certsData || [];
-      // If database has 0 certifications, auto-import defaults
-      if (currentCerts.length === 0) {
+      // If database has fewer than 3 certifications, auto-import defaults
+      if (currentCerts.length < 3) {
         try {
           const importCertRes = await importDefaultCertificationsToSupabase();
           if (importCertRes && importCertRes.count > 0) {
@@ -1226,17 +1226,15 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
 
             {view === 'exp' && (
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {experiencesList.length === 0 && (
-                  <button
-                    type="button"
-                    className="btn w"
-                    onClick={handleImportDefaultExps}
-                    disabled={importingExp}
-                    title="Pulihkan experience bawaan ke database"
-                  >
-                    {importingExp ? 'Memulihkan...' : 'Pulihkan Bawaan'}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn w"
+                  onClick={handleImportDefaultExps}
+                  disabled={importingExp}
+                  title="Pulihkan dan masukkan data experience bawaan ke database"
+                >
+                  {importingExp ? 'Memulihkan...' : 'Pulihkan Experience Bawaan'}
+                </button>
                 <button type="button" className="btn" onClick={openNewExpModal}>
                   <Icon name="plus" /> Tambah experience
                 </button>
@@ -1245,17 +1243,15 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
 
             {view === 'cert' && (
               <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                {certificationsList.length === 0 && (
-                  <button
-                    type="button"
-                    className="btn w"
-                    onClick={handleImportDefaultCerts}
-                    disabled={importingCert}
-                    title="Pulihkan sertifikasi bawaan ke database"
-                  >
-                    {importingCert ? 'Memulihkan...' : 'Pulihkan Bawaan'}
-                  </button>
-                )}
+                <button
+                  type="button"
+                  className="btn w"
+                  onClick={handleImportDefaultCerts}
+                  disabled={importingCert}
+                  title="Pulihkan dan masukkan 3 sertifikasi bawaan ke database"
+                >
+                  {importingCert ? 'Memulihkan...' : 'Pulihkan 3 Sertifikat Bawaan'}
+                </button>
                 <button type="button" className="btn" onClick={openNewCertModal}>
                   <Icon name="plus" /> Tambah sertifikat
                 </button>
@@ -2083,35 +2079,50 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                   💡 Isi otomatis dari experience bawaan:
                 </span>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {defaultExperiencesData.map((exp, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      className="btn w"
-                      style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
-                      onClick={() => {
-                        const rawPeriod = exp.period ? String(exp.period).slice(0, 7) : '2026-02';
-                        const hl = Array.isArray(exp.highlights) ? exp.highlights.join('\n') : '';
-                        const imgs = Array.isArray(exp.images) ? [...exp.images] : [];
-                        setExpForm((prev) => ({
-                          ...prev,
-                          period: rawPeriod,
-                          title: exp.title || '',
-                          organization: exp.organization || '',
-                          location: exp.location || '',
-                          description: exp.description || '',
-                          highlightsText: hl,
-                          tech: exp.tech || '',
-                          images: imgs,
-                          published: true,
-                        }));
-                        showToast(`Form diisi dengan data: ${exp.title}`);
-                      }}
-                      title={`Isi form dengan data ${exp.title}`}
-                    >
-                      {exp.title.split(' - ')[0] || exp.title}
-                    </button>
-                  ))}
+                  {defaultExperiencesData.map((exp, idx) => {
+                    const expTitle = exp.title || exp.role || 'Experience';
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="btn w"
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
+                        onClick={() => {
+                          const periodMap = {
+                            'exp-lks-cyber': '2026-02',
+                            'exp-jagoan-hosting': '2026-02',
+                            'exp-jambore-provinsi': '2026-03',
+                            'exp-jambore-kabupaten': '2026-01',
+                            'exp-ozeva-coding': '2026-02',
+                          };
+                          const rawPeriod = periodMap[exp.id] || (exp.period && /^\d{4}-\d{2}/.test(exp.period) ? exp.period.slice(0, 7) : '2026-02');
+                          const hl = Array.isArray(exp.highlights)
+                            ? exp.highlights.join('\n')
+                            : (Array.isArray(exp.responsibilities) ? exp.responsibilities.join('\n') : '');
+                          const techStr = exp.tech || (Array.isArray(exp.technologies) ? exp.technologies.join(', ') : '');
+                          const imgs = Array.isArray(exp.images)
+                            ? exp.images.map((img) => (typeof img === 'string' ? img : img.src))
+                            : [];
+                          setExpForm((prev) => ({
+                            ...prev,
+                            period: rawPeriod,
+                            title: expTitle,
+                            organization: exp.organization || exp.company || '',
+                            location: exp.location || '',
+                            description: exp.description || '',
+                            highlightsText: hl,
+                            tech: techStr,
+                            images: imgs,
+                            published: true,
+                          }));
+                          showToast(`Form diisi dengan data: ${expTitle.split(' - ')[0]}`);
+                        }}
+                        title={`Isi form dengan data ${expTitle}`}
+                      >
+                        {expTitle.split(' - ')[0] || expTitle}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
@@ -2289,32 +2300,42 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                   💡 Isi otomatis dari sertifikasi bawaan:
                 </span>
                 <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {defaultCertificationsData.map((c, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      className="btn w"
-                      style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
-                      onClick={() => {
-                        const rawDate = c.issued_on || c.date || '2026-02-18';
-                        const imgs = Array.isArray(c.images) ? [...c.images] : [];
-                        setCertForm((prev) => ({
-                          ...prev,
-                          issued_on: String(rawDate).slice(0, 10),
-                          title: c.title || '',
-                          issuer: c.issuer || '',
-                          description: c.description || '',
-                          credential_id: c.credential_id || c.credentialId || '',
-                          images: imgs,
-                          published: true,
-                        }));
-                        showToast(`Form diisi dengan data: ${c.title}`);
-                      }}
-                      title={`Isi form dengan data ${c.title}`}
-                    >
-                      {c.title.split(' - ')[0] || c.title}
-                    </button>
-                  ))}
+                  {defaultCertificationsData.map((c, idx) => {
+                    const certTitle = c.title || c.name || 'Sertifikat';
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        className="btn w"
+                        style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
+                        onClick={() => {
+                          const dateMap = {
+                            'cert-lks': '2026-02-18',
+                            'cert-jambore-kabupaten': '2026-01-15',
+                            'cert-ozeva': '2026-05-09',
+                          };
+                          const rawDate = dateMap[c.id] || (c.issued_on && /^\d{4}-\d{2}-\d{2}/.test(c.issued_on) ? c.issued_on : '2026-01-01');
+                          const imgs = Array.isArray(c.images)
+                            ? c.images.map((img) => (typeof img === 'string' ? img : img.src))
+                            : [];
+                          setCertForm((prev) => ({
+                            ...prev,
+                            issued_on: rawDate,
+                            title: certTitle,
+                            issuer: c.issuer || '',
+                            description: c.description || '',
+                            credential_id: c.credential_id || c.credentialId || '',
+                            images: imgs,
+                            published: true,
+                          }));
+                          showToast(`Form diisi dengan data: ${certTitle.split(' - ')[0]}`);
+                        }}
+                        title={`Isi form dengan data ${certTitle}`}
+                      >
+                        {certTitle.split(' - ')[0] || certTitle}
+                      </button>
+                    );
+                  })}
                 </div>
               </div>
             )}
