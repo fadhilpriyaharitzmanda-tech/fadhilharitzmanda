@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import useLenis from './hooks/useLenis';
 import useReveal from './hooks/useReveal';
 import Navbar from './components/Navbar';
@@ -14,8 +14,10 @@ import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import GuestbookDrawer from './components/GuestbookDrawer';
 import LegoMinifiguresStage from './components/LegoMinifiguresStage';
+import AdminDashboard from './components/admin/AdminDashboard';
+import { SiteProvider } from './context/SiteContext';
 
-export default function App() {
+function PublicPortfolio() {
   useLenis();
   useReveal();
 
@@ -42,3 +44,33 @@ export default function App() {
   );
 }
 
+export default function App() {
+  const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
+
+  useEffect(() => {
+    const handlePopState = () => {
+      setCurrentPath(window.location.pathname);
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateTo = (path) => {
+    window.history.pushState({}, '', path);
+    setCurrentPath(path);
+    window.scrollTo(0, 0);
+  };
+
+  const isAdminRoute = currentPath === '/admin' || currentPath.startsWith('/admin/');
+
+  return (
+    <SiteProvider>
+      {isAdminRoute ? (
+        <AdminDashboard onNavigateHome={() => navigateTo('/')} />
+      ) : (
+        <PublicPortfolio />
+      )}
+    </SiteProvider>
+  );
+}

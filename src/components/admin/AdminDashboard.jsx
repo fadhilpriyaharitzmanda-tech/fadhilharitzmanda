@@ -1,0 +1,1133 @@
+import React, { useState, useEffect, useRef } from 'react';
+import { supabase, isSupabaseConfigured } from '../../lib/supabase';
+import {
+  checkIsAdmin,
+  fetchSiteProfile,
+  updateSiteProfile,
+  fetchAllProjectsAdmin,
+  createProject,
+  updateProject,
+  deleteProject,
+  toggleProjectPublished,
+  uploadProjectImage,
+  fetchAdminGuestbook,
+  deleteAdminGuestbookMessage,
+  fetchRatingsSummary,
+} from '../../services/siteService';
+import { useSiteData } from '../../context/SiteContext';
+import './AdminDashboard.css';
+
+const COLORS = ['#b3121a', '#1f4fb4', '#1a9e4a', '#c77a00'];
+
+const LegoLogo = ({ className = 'logo' }) => (
+  <svg className={className} viewBox="0 0 64 64" aria-hidden="true">
+    <rect x="9" y="21" width="48" height="38" rx="4" fill="#141414" />
+    <rect x="11" y="7" width="14" height="10" rx="2.5" fill="#b3121a" stroke="#141414" strokeWidth="3.5" />
+    <rect x="31" y="7" width="14" height="10" rx="2.5" fill="#b3121a" stroke="#141414" strokeWidth="3.5" />
+    <rect x="4" y="16" width="48" height="38" rx="4" fill="#b3121a" stroke="#141414" strokeWidth="4" />
+    <path fill="#ffd500" d="M19 24h20v6H25v3h9v5h-9v9h-6z" />
+  </svg>
+);
+
+const Icon = ({ name }) => {
+  const paths = {
+    home: <path d="M3 11l9-8 9 8M5 10v10h14V10" />,
+    user: (
+      <>
+        <circle cx="12" cy="8" r="4" />
+        <path d="M4 21c0-4 4-6 8-6s8 2 8 6" />
+      </>
+    ),
+    proj: (
+      <>
+        <rect x="3" y="9" width="18" height="11" rx="2" />
+        <path d="M7 9V6h3v3M14 9V6h3v3" />
+      </>
+    ),
+    chat: <path d="M4 5h16v11H9l-5 4z" />,
+    edit: <path d="M4 20h4L19 9l-4-4L4 16z" />,
+    del: (
+      <>
+        <path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13" />
+      </>
+    ),
+    plus: <path d="M12 5v14M5 12h14" />,
+    out: <path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9" />,
+    save: (
+      <>
+        <path d="M5 4h12l2 2v14H5zM8 4v5h7V4M8 20v-6h8v6" />
+      </>
+    ),
+    back: <path d="M19 12H5M12 19l-7-7 7-7" />,
+    external: <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />,
+  };
+
+  return (
+    <svg className="i" viewBox="0 0 24 24" aria-hidden="true">
+      {paths[name] || null}
+    </svg>
+  );
+};
+
+export default function AdminDashboard({ onNavigateHome }) {
+  const { refreshSiteData } = useSiteData();
+
+  // Auth states
+  const [authLoading, setAuthLoading] = useState(true);
+  const [currentUser, setCurrentUser] = useState(null);
+  const [isAdminUser, setIsAdminUser] = useState(false);
+
+  // Active view
+  const [view, setView] = useState('home'); // 'home' | 'profile' | 'projects' | 'guest'
+
+  // Data states
+  const [profileForm, setProfileForm] = useState({
+    first_name: '',
+    last_name: '',
+    status: '',
+    bio: '',
+    tags: '',
+    cv_url: '',
+  });
+  const [profileSaving, setProfileSaving] = useState(false);
+  const [profileError, setProfileError] = useState('');
+
+  const [projectsList, setProjectsList] = useState([]);
+  const [projectsLoading, setProjectsLoading] = useState(false);
+
+  const [guestMessages, setGuestMessages] = useState([]);
+  const [ratingsInfo, setRatingsInfo] = useState({ average: '0.0', count: 0, ratings: [] });
+  const [guestLoading, setGuestLoading] = useState(false);
+
+  // Toast
+  const [toastMsg, setToastMsg] = useState('');
+  const toastTimeoutRef = useRef(null);
+
+  const showToast = (msg) => {
+    setToastMsg(msg);
+    if (toastTimeoutRef.current) clearTimeout(toastTimeoutRef.current);
+    toastTimeoutRef.current = setTimeout(() => {
+      setToastMsg('');
+    }, 2200);
+  };
+
+  // Project Modal State
+  const [modalOpen, setModalOpen] = useState(false);
+  const [editingProject, setEditingProject] = useState(null);
+  const [projectForm, setProjectForm] = useState({
+    title: '',
+    description: '',
+    tech: '',
+    demo_url: '',
+    repo_url: '',
+    image_url: '',
+    published: true,
+  });
+  const [projectFile, setProjectFile] = useState(null);
+  const [projectUploading, setProjectUploading] = useState(false);
+  const [projectModalError, setProjectModalError] = useState('');
+
+  // 1. Check Authentication & RPC is_admin
+  useEffect(() => {
+    let isMounted = true;
+
+    const verifySession = async () => {
+      setAuthLoading(true);
+      try {
+        if (!isSupabaseConfigured) {
+          setIsAdminUser(false);
+          setCurrentUser(null);
+          return;
+        }
+
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!isMounted) return;
+
+        if (session?.user) {
+          setCurrentUser(session.user);
+          const adminStatus = await checkIsAdmin();
+          if (!isMounted) return;
+          setIsAdminUser(adminStatus);
+        } else {
+          setCurrentUser(null);
+          setIsAdminUser(false);
+        }
+      } catch (err) {
+        console.error('Auth verification error:', err);
+      } finally {
+        if (isMounted) setAuthLoading(false);
+      }
+    };
+
+    verifySession();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
+      if (!isMounted) return;
+      if (session?.user) {
+        setCurrentUser(session.user);
+        const adminStatus = await checkIsAdmin();
+        if (!isMounted) return;
+        setIsAdminUser(adminStatus);
+      } else {
+        setCurrentUser(null);
+        setIsAdminUser(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription?.unsubscribe();
+    };
+  }, []);
+
+  // 2. Fetch data when admin user is verified
+  const loadAdminData = async () => {
+    if (!isAdminUser) return;
+    try {
+      setProjectsLoading(true);
+      setGuestLoading(true);
+
+      const [profData, projsData, msgsData, ratingData] = await Promise.all([
+        fetchSiteProfile(),
+        fetchAllProjectsAdmin(),
+        fetchAdminGuestbook(),
+        fetchRatingsSummary(),
+      ]);
+
+      if (profData) {
+        setProfileForm({
+          first_name: profData.first_name || '',
+          last_name: profData.last_name || '',
+          status: profData.status || '',
+          bio: profData.bio || '',
+          tags: profData.tags || '',
+          cv_url: profData.cv_url || '',
+        });
+      }
+
+      setProjectsList(projsData || []);
+      setGuestMessages(msgsData || []);
+      setRatingsInfo(ratingData || { average: '0.0', count: 0, ratings: [] });
+    } catch (err) {
+      console.error('Error loading admin dashboard data:', err);
+      showToast('Gagal memuat data dari database.');
+    } finally {
+      setProjectsLoading(false);
+      setGuestLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    if (isAdminUser) {
+      loadAdminData();
+    }
+  }, [isAdminUser]);
+
+  // Auth Handlers
+  const handleLoginGitHub = async () => {
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'github',
+        options: {
+          redirectTo: `${window.location.origin}/admin`,
+        },
+      });
+      if (error) throw error;
+    } catch (err) {
+      console.error('GitHub login error:', err);
+      showToast(err.message || 'Gagal login dengan GitHub.');
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await supabase.auth.signOut();
+      setCurrentUser(null);
+      setIsAdminUser(false);
+      showToast('Berhasil keluar.');
+    } catch (err) {
+      console.error('Logout error:', err);
+    }
+  };
+
+  // Profile Save Handler
+  const handleSaveProfile = async (e) => {
+    if (e) e.preventDefault();
+    setProfileError('');
+
+    if (!profileForm.first_name.trim() || !profileForm.last_name.trim()) {
+      setProfileError('Nama depan dan belakang wajib diisi.');
+      return;
+    }
+
+    setProfileSaving(true);
+    try {
+      await updateSiteProfile(profileForm);
+      await refreshSiteData();
+      showToast('Profil berhasil disimpan!');
+    } catch (err) {
+      console.error('Save profile error:', err);
+      setProfileError(err.message || 'Gagal menyimpan profil.');
+      showToast('Gagal menyimpan profil.');
+    } finally {
+      setProfileSaving(false);
+    }
+  };
+
+  // Project Toggle Published
+  const handleTogglePublish = async (proj) => {
+    try {
+      const updated = await toggleProjectPublished(proj.id, proj.published);
+      setProjectsList((prev) =>
+        prev.map((item) => (item.id === proj.id ? { ...item, published: updated.published } : item))
+      );
+      await refreshSiteData();
+      showToast(updated.published ? 'Project ditampilkan di website' : 'Project disembunyikan (Draft)');
+    } catch (err) {
+      console.error('Toggle publish error:', err);
+      showToast('Gagal mengubah status publikasi.');
+    }
+  };
+
+  // Delete Project Handler
+  const handleDeleteProject = async (proj) => {
+    if (!window.confirm(`Hapus project "${proj.title}"?`)) return;
+
+    try {
+      await deleteProject(proj.id, proj.image_url);
+      setProjectsList((prev) => prev.filter((item) => item.id !== proj.id));
+      await refreshSiteData();
+      showToast('Project berhasil dihapus!');
+    } catch (err) {
+      console.error('Delete project error:', err);
+      showToast(err.message || 'Gagal menghapus project.');
+    }
+  };
+
+  // Open Project Modal
+  const openNewProjectModal = () => {
+    setEditingProject(null);
+    setProjectForm({
+      title: '',
+      description: '',
+      tech: '',
+      demo_url: '',
+      repo_url: '',
+      image_url: '',
+      published: true,
+    });
+    setProjectFile(null);
+    setProjectModalError('');
+    setModalOpen(true);
+  };
+
+  const openEditProjectModal = (proj) => {
+    setEditingProject(proj);
+    setProjectForm({
+      title: proj.title || '',
+      description: proj.description || '',
+      tech: proj.tech || '',
+      demo_url: proj.demo_url || '',
+      repo_url: proj.repo_url || '',
+      image_url: proj.image_url || '',
+      published: Boolean(proj.published),
+    });
+    setProjectFile(null);
+    setProjectModalError('');
+    setModalOpen(true);
+  };
+
+  // Save Project (Create or Edit)
+  const handleSaveProjectModal = async (e) => {
+    e.preventDefault();
+    setProjectModalError('');
+
+    if (!projectForm.title.trim()) {
+      setProjectModalError('Judul project wajib diisi.');
+      return;
+    }
+
+    setProjectUploading(true);
+    try {
+      let finalImageUrl = projectForm.image_url;
+
+      // If user selected a new file, upload to Supabase Storage project-images bucket
+      if (projectFile) {
+        if (!projectFile.type.startsWith('image/')) {
+          throw new Error('Format file harus berupa gambar (image/*).');
+        }
+        if (projectFile.size > 2 * 1024 * 1024) {
+          throw new Error('Ukuran gambar maksimal adalah 2 MB.');
+        }
+        finalImageUrl = await uploadProjectImage(projectFile);
+      }
+
+      if (editingProject) {
+        const oldImage = editingProject.image_url;
+        const updated = await updateProject(
+          editingProject.id,
+          { ...projectForm, image_url: finalImageUrl },
+          oldImage
+        );
+        setProjectsList((prev) =>
+          prev.map((item) => (item.id === editingProject.id ? updated : item))
+        );
+        showToast('Project berhasil diperbarui!');
+      } else {
+        const created = await createProject({
+          ...projectForm,
+          image_url: finalImageUrl,
+        });
+        setProjectsList((prev) => [created, ...prev]);
+        showToast('Project baru berhasil ditambahkan!');
+      }
+
+      await refreshSiteData();
+      setModalOpen(false);
+    } catch (err) {
+      console.error('Save project error:', err);
+      setProjectModalError(err.message || 'Gagal menyimpan project.');
+    } finally {
+      setProjectUploading(false);
+    }
+  };
+
+  // Guestbook Delete Message
+  const handleDeleteGuestMessage = async (msg) => {
+    if (!window.confirm(`Hapus pesan dari "${msg.name}"?`)) return;
+
+    try {
+      await deleteAdminGuestbookMessage(msg.id);
+      setGuestMessages((prev) => prev.filter((item) => item.id !== msg.id));
+      showToast('Pesan berhasil dihapus!');
+    } catch (err) {
+      console.error('Delete message error:', err);
+      showToast(err.message || 'Gagal menghapus pesan.');
+    }
+  };
+
+  // Helper to split tags/tech chips
+  const renderChips = (str) => {
+    if (!str) return null;
+    return str
+      .split(',')
+      .map((t) => t.trim())
+      .filter(Boolean)
+      .map((chip, idx) => <span key={idx}>{chip}</span>);
+  };
+
+  // 1. Loading screen
+  if (authLoading) {
+    return (
+      <div className="lego-admin-scope">
+        <div className="lg">
+          <div className="card">
+            <LegoLogo />
+            <h1>Admin Panel</h1>
+            <p className="sub" style={{ marginTop: '12px' }}>
+              Memverifikasi otentikasi & hak akses...
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 2. Not logged in screen
+  if (!currentUser) {
+    return (
+      <div className="lego-admin-scope">
+        <div className="lg">
+          <div className="card">
+            <LegoLogo />
+            <h1 style={{ fontSize: '1.6rem' }}>Admin</h1>
+            <p className="sub" style={{ marginBottom: '22px' }}>
+              Halaman ini khusus pemilik website. Masuk dengan akun GitHub yang terdaftar sebagai admin.
+            </p>
+            <button
+              className="btn"
+              onClick={handleLoginGitHub}
+              style={{ background: '#1c1c1c', width: '100%', justifyContent: 'center' }}
+            >
+              <svg className="i" viewBox="0 0 24 24" fill="currentColor">
+                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
+              </svg>
+              Masuk dengan GitHub
+            </button>
+            <div style={{ marginTop: '20px' }}>
+              <button
+                type="button"
+                className="btn w"
+                onClick={onNavigateHome}
+                style={{ width: '100%', justifyContent: 'center' }}
+              >
+                <Icon name="back" /> Kembali ke Website
+              </button>
+            </div>
+            <p className="note" style={{ marginTop: '16px' }}>
+              Keamanan sebenarnya dikontrol oleh kebijakan RLS Supabase (hanya akun terdaftar di public.is_admin() yang berhak mengubah data).
+            </p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 3. Logged in but not admin screen
+  if (!isAdminUser) {
+    return (
+      <div className="lego-admin-scope">
+        <div className="lg">
+          <div className="card">
+            <div
+              style={{
+                width: '60px',
+                height: '60px',
+                borderRadius: '50%',
+                background: '#ffd9db',
+                border: '2px solid #b3121a',
+                display: 'grid',
+                placeItems: 'center',
+                margin: '0 auto 14px',
+                color: '#b3121a',
+              }}
+            >
+              <svg className="i" style={{ width: '32px', height: '32px' }} viewBox="0 0 24 24">
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+                <path d="M12 8v4M12 16h.01" />
+              </svg>
+            </div>
+            <h1 style={{ fontSize: '1.6rem', color: '#b3121a' }}>Akses Ditolak</h1>
+            <p className="sub" style={{ margin: '12px 0 20px' }}>
+              Akun GitHub kamu (<b>{currentUser.email || currentUser.user_metadata?.user_name || 'pengguna'}</b>) tidak terdaftar sebagai administrator.
+            </p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+              <button
+                type="button"
+                className="btn"
+                onClick={handleLogout}
+                style={{ justifyContent: 'center' }}
+              >
+                <Icon name="out" /> Keluar (Logout)
+              </button>
+              <button
+                type="button"
+                className="btn w"
+                onClick={onNavigateHome}
+                style={{ justifyContent: 'center' }}
+              >
+                <Icon name="back" /> Kembali ke Website
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // 4. Authenticated Admin Shell
+  const publishedCount = projectsList.filter((p) => p.published).length;
+
+  return (
+    <div className="lego-admin-scope">
+      {/* Toast Notification */}
+      <div className={`lego-admin-toast ${toastMsg ? 'on' : ''}`} role="status">
+        {toastMsg}
+      </div>
+
+      <div className="shell">
+        {/* Sidebar */}
+        <aside>
+          <div className="brand">
+            <LegoLogo />
+            <div>
+              FADHIL
+              <small>ADMIN</small>
+            </div>
+          </div>
+
+          <button
+            className={`nv ${view === 'home' ? 'on' : ''}`}
+            onClick={() => {
+              setView('home');
+              window.scrollTo(0, 0);
+            }}
+          >
+            <Icon name="home" /> Ringkasan
+          </button>
+          <button
+            className={`nv ${view === 'profile' ? 'on' : ''}`}
+            onClick={() => {
+              setView('profile');
+              window.scrollTo(0, 0);
+            }}
+          >
+            <Icon name="user" /> Profil
+          </button>
+          <button
+            className={`nv ${view === 'projects' ? 'on' : ''}`}
+            onClick={() => {
+              setView('projects');
+              window.scrollTo(0, 0);
+            }}
+          >
+            <Icon name="proj" /> Project
+          </button>
+          <button
+            className={`nv ${view === 'guest' ? 'on' : ''}`}
+            onClick={() => {
+              setView('guest');
+              window.scrollTo(0, 0);
+            }}
+          >
+            <Icon name="chat" /> Guestbook
+          </button>
+
+          <div className="sp" />
+
+          <button
+            type="button"
+            className="nv"
+            onClick={onNavigateHome}
+            title="Lihat website publik"
+          >
+            <Icon name="external" /> Lihat Website
+          </button>
+
+          <button
+            type="button"
+            className="nv lo"
+            onClick={handleLogout}
+            title="Keluar dari akun admin"
+          >
+            <Icon name="out" /> Keluar
+          </button>
+        </aside>
+
+        {/* Main Content Area */}
+        <main>
+          {/* Header Bar */}
+          <div className="ph">
+            <div>
+              <h1>
+                {view === 'home' && 'Ringkasan'}
+                {view === 'profile' && 'Profil'}
+                {view === 'projects' && 'Project'}
+                {view === 'guest' && 'Guestbook'}
+              </h1>
+              <p className="sub">
+                {view === 'home' && 'Kelola isi websitemu tanpa menyentuh kode.'}
+                {view === 'profile' && 'Teks yang tampil di bagian hero dan About.'}
+                {view === 'projects' && 'Tambah, ubah, atau sembunyikan project.'}
+                {view === 'guest' && 'Pantau pesan dan hapus yang tidak pantas.'}
+              </p>
+            </div>
+
+            {view === 'projects' && (
+              <button type="button" className="btn" onClick={openNewProjectModal}>
+                <Icon name="plus" /> Tambah project
+              </button>
+            )}
+
+            {view === 'profile' && (
+              <button
+                type="button"
+                className="btn"
+                onClick={handleSaveProfile}
+                disabled={profileSaving}
+              >
+                <Icon name="save" /> {profileSaving ? 'Menyimpan...' : 'Simpan'}
+              </button>
+            )}
+          </div>
+
+          {/* VIEW: RINGKASAN */}
+          {view === 'home' && (
+            <div>
+              {/* Stat Cards */}
+              <div className="stats">
+                <div className="stat" style={{ '--c': '#b3121a' }}>
+                  <b>{projectsList.length}</b>
+                  <span>Total project</span>
+                </div>
+                <div className="stat" style={{ '--c': '#1a9e4a' }}>
+                  <b>{publishedCount}</b>
+                  <span>Tampil di website</span>
+                </div>
+                <div className="stat" style={{ '--c': '#1f4fb4' }}>
+                  <b>{guestMessages.length}</b>
+                  <span>Pesan guestbook</span>
+                </div>
+                <div className="stat" style={{ '--c': '#ffd500' }}>
+                  <b>{ratingsInfo.average || '0.0'}</b>
+                  <span>Rating rata-rata</span>
+                </div>
+              </div>
+
+              {/* Two Column Summary */}
+              <div className="two">
+                {/* Recent Projects */}
+                <div className="card">
+                  <h2>
+                    <span>Project terbaru</span>
+                    <button
+                      type="button"
+                      className="btn w"
+                      onClick={() => setView('projects')}
+                      style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                    >
+                      Lihat semua
+                    </button>
+                  </h2>
+
+                  {projectsList.length === 0 ? (
+                    <p className="empty">Belum ada project.</p>
+                  ) : (
+                    projectsList.slice(0, 3).map((p, idx) => (
+                      <div className="row" key={p.id}>
+                        <span className="th" style={{ background: COLORS[idx % COLORS.length] }}>
+                          {p.image_url ? (
+                            <img src={p.image_url} alt={p.title} />
+                          ) : (
+                            (p.title || '?')[0].toUpperCase()
+                          )}
+                        </span>
+                        <div className="tx">
+                          <b>
+                            {p.title}
+                            {!p.published && <span className="tg">DRAFT</span>}
+                          </b>
+                          <p>{p.description || 'Tidak ada deskripsi'}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                {/* Recent Guestbook Messages */}
+                <div className="card">
+                  <h2>
+                    <span>Pesan terbaru</span>
+                    <button
+                      type="button"
+                      className="btn w"
+                      onClick={() => setView('guest')}
+                      style={{ padding: '4px 12px', fontSize: '0.8rem' }}
+                    >
+                      Kelola
+                    </button>
+                  </h2>
+
+                  {guestMessages.length === 0 ? (
+                    <p className="empty">Belum ada pesan.</p>
+                  ) : (
+                    guestMessages.slice(0, 3).map((m, idx) => (
+                      <div className="row" key={m.id}>
+                        <span className="av" style={{ background: COLORS[idx % COLORS.length] }}>
+                          {m.avatar_url ? (
+                            <img src={m.avatar_url} alt={m.name} />
+                          ) : (
+                            (m.name || '?')[0].toUpperCase()
+                          )}
+                        </span>
+                        <div className="tx">
+                          <b>
+                            {m.name}{' '}
+                            <span className="tg">
+                              {(m.provider || 'web').toUpperCase()}
+                            </span>
+                          </b>
+                          <p>{m.message}</p>
+                        </div>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: PROFIL */}
+          {view === 'profile' && (
+            <div className="form">
+              {/* Form Input Card */}
+              <div className="card">
+                <form onSubmit={handleSaveProfile}>
+                  <div className="g2">
+                    <div>
+                      <label htmlFor="f1">Nama depan</label>
+                      <input
+                        id="f1"
+                        maxLength={40}
+                        value={profileForm.first_name}
+                        onChange={(e) =>
+                          setProfileForm({ ...profileForm, first_name: e.target.value })
+                        }
+                        placeholder="Contoh: FADHIL PRIYA"
+                      />
+                    </div>
+                    <div>
+                      <label htmlFor="f2">Nama belakang (merah)</label>
+                      <input
+                        id="f2"
+                        maxLength={40}
+                        value={profileForm.last_name}
+                        onChange={(e) =>
+                          setProfileForm({ ...profileForm, last_name: e.target.value })
+                        }
+                        placeholder="Contoh: HARITZMANDA"
+                      />
+                    </div>
+                  </div>
+
+                  <label htmlFor="f3">Teks status</label>
+                  <input
+                    id="f3"
+                    maxLength={50}
+                    value={profileForm.status}
+                    onChange={(e) =>
+                      setProfileForm({ ...profileForm, status: e.target.value })
+                    }
+                    placeholder="STATUS: READY TO BUILD"
+                  />
+
+                  <label htmlFor="f4">Deskripsi singkat (bio)</label>
+                  <textarea
+                    id="f4"
+                    maxLength={500}
+                    value={profileForm.bio}
+                    onChange={(e) =>
+                      setProfileForm({ ...profileForm, bio: e.target.value })
+                    }
+                    placeholder="Deskripsi singkat tentang dirimu..."
+                  />
+
+                  <label htmlFor="f5">Tag (pisahkan dengan koma)</label>
+                  <input
+                    id="f5"
+                    value={profileForm.tags}
+                    onChange={(e) =>
+                      setProfileForm({ ...profileForm, tags: e.target.value })
+                    }
+                    placeholder="Pelajar RPL, Young Developer, Software Enthusiast"
+                  />
+
+                  <label htmlFor="f6">Link CV</label>
+                  <input
+                    id="f6"
+                    type="url"
+                    value={profileForm.cv_url}
+                    onChange={(e) =>
+                      setProfileForm({ ...profileForm, cv_url: e.target.value })
+                    }
+                    placeholder="https://.../cv.pdf"
+                  />
+
+                  {profileError && (
+                    <div className="er" role="alert">
+                      {profileError}
+                    </div>
+                  )}
+
+                  <div style={{ marginTop: '20px' }}>
+                    <button
+                      type="submit"
+                      className="btn"
+                      disabled={profileSaving}
+                      style={{ width: '100%', justifyContent: 'center' }}
+                    >
+                      <Icon name="save" /> {profileSaving ? 'Menyimpan...' : 'Simpan Perubahan Profil'}
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* Live Preview Card */}
+              <div className="card pvbox">
+                <h2>Pratinjau</h2>
+                <div id="pvw">
+                  <span className="pv">{profileForm.status || 'STATUS: READY TO BUILD'}</span>
+                  <div className="pvn">
+                    {profileForm.first_name || 'FADHIL PRIYA'}{' '}
+                    <span>{profileForm.last_name || 'HARITZMANDA'}</span>
+                  </div>
+                  <p>
+                    {profileForm.bio ||
+                      'Deskripsi singkat akan muncul di sini sesuai dengan input di sebelah kiri.'}
+                  </p>
+                  <div className="chips">
+                    {renderChips(profileForm.tags || 'Pelajar RPL, Young Developer')}
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* VIEW: PROJECTS */}
+          {view === 'projects' && (
+            <div className="card">
+              {projectsLoading ? (
+                <p className="empty">Memuat daftar project...</p>
+              ) : projectsList.length === 0 ? (
+                <p className="empty">
+                  Belum ada project. Klik tombol "+ Tambah project" di atas untuk membuat yang pertama.
+                </p>
+              ) : (
+                projectsList.map((p, idx) => (
+                  <div className="row" key={p.id}>
+                    <span className="th" style={{ background: COLORS[idx % COLORS.length] }}>
+                      {p.image_url ? (
+                        <img src={p.image_url} alt={p.title} />
+                      ) : (
+                        (p.title || '?')[0].toUpperCase()
+                      )}
+                    </span>
+                    <div className="tx">
+                      <b>
+                        {p.title}
+                        {!p.published && <span className="tg">DRAFT</span>}
+                      </b>
+                      <p>{p.description || 'Tidak ada deskripsi'}</p>
+                      <div className="chips">{renderChips(p.tech)}</div>
+                    </div>
+
+                    {/* Toggle Switch */}
+                    <button
+                      type="button"
+                      className="sw"
+                      role="switch"
+                      aria-checked={p.published}
+                      onClick={() => handleTogglePublish(p)}
+                      title={p.published ? 'Klik untuk sembunyikan' : 'Klik untuk tampilkan'}
+                    >
+                      <i />
+                      {p.published ? 'Tampil' : 'Draft'}
+                    </button>
+
+                    {/* Actions */}
+                    <div className="acts">
+                      <button
+                        type="button"
+                        className="ib"
+                        onClick={() => openEditProjectModal(p)}
+                        aria-label={`Edit ${p.title}`}
+                        title="Edit Project"
+                      >
+                        <Icon name="edit" />
+                      </button>
+                      <button
+                        type="button"
+                        className="ib d"
+                        onClick={() => handleDeleteProject(p)}
+                        aria-label={`Hapus ${p.title}`}
+                        title="Hapus Project"
+                      >
+                        <Icon name="del" />
+                      </button>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          )}
+
+          {/* VIEW: GUESTBOOK */}
+          {view === 'guest' && (
+            <div>
+              {/* Rating Summary Card */}
+              <div className="card">
+                <div className="avg">
+                  <b>{ratingsInfo.average || '0.0'}</b>
+                  <span className="star" aria-hidden="true">
+                    ★
+                  </span>
+                  <span>dari {ratingsInfo.count || 0} pemberi rating</span>
+                </div>
+              </div>
+
+              {/* Guestbook Messages Card */}
+              <div className="card">
+                {guestLoading ? (
+                  <p className="empty">Memuat pesan guestbook...</p>
+                ) : guestMessages.length === 0 ? (
+                  <p className="empty">Belum ada pesan di guestbook.</p>
+                ) : (
+                  guestMessages.map((m, idx) => (
+                    <div className="row" key={m.id}>
+                      <span className="av" style={{ background: COLORS[idx % COLORS.length] }}>
+                        {m.avatar_url ? (
+                          <img src={m.avatar_url} alt={m.name} />
+                        ) : (
+                          (m.name || '?')[0].toUpperCase()
+                        )}
+                      </span>
+                      <div className="tx">
+                        <b>
+                          {m.name}{' '}
+                          <span className="tg">
+                            {(m.provider || 'web').toUpperCase()}
+                          </span>
+                        </b>
+                        <p style={{ whiteSpace: 'normal' }}>{m.message}</p>
+                        {m.created_at && (
+                          <small style={{ color: '#888', fontSize: '0.75rem' }}>
+                            {new Date(m.created_at).toLocaleString('id-ID', {
+                              dateStyle: 'medium',
+                              timeStyle: 'short',
+                            })}
+                          </small>
+                        )}
+                      </div>
+                      <button
+                        type="button"
+                        className="ib d"
+                        onClick={() => handleDeleteGuestMessage(m)}
+                        aria-label={`Hapus pesan dari ${m.name}`}
+                        title="Hapus pesan"
+                      >
+                        <Icon name="del" />
+                      </button>
+                    </div>
+                  ))
+                )}
+              </div>
+            </div>
+          )}
+        </main>
+      </div>
+
+      {/* Project Modal Dialog (Add / Edit) */}
+      {modalOpen && (
+        <div className="lego-modal-overlay" onClick={() => !projectUploading && setModalOpen(false)}>
+          <div
+            className="lego-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h2>{editingProject ? 'Edit project' : 'Project baru'}</h2>
+
+            <form onSubmit={handleSaveProjectModal}>
+              <label htmlFor="p1">Judul *</label>
+              <input
+                id="p1"
+                maxLength={80}
+                required
+                value={projectForm.title}
+                onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
+                placeholder="Judul project"
+                autoFocus
+              />
+
+              <label htmlFor="p2">Deskripsi</label>
+              <textarea
+                id="p2"
+                maxLength={400}
+                value={projectForm.description}
+                onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+                placeholder="Penjelasan ringkas tentang project ini..."
+              />
+
+              <label htmlFor="p3">Teknologi (pisahkan dengan koma)</label>
+              <input
+                id="p3"
+                value={projectForm.tech}
+                onChange={(e) => setProjectForm({ ...projectForm, tech: e.target.value })}
+                placeholder="React, Tailwind, Supabase"
+              />
+
+              <div className="g2">
+                <div>
+                  <label htmlFor="p4">Link demo</label>
+                  <input
+                    id="p4"
+                    type="url"
+                    value={projectForm.demo_url}
+                    onChange={(e) => setProjectForm({ ...projectForm, demo_url: e.target.value })}
+                    placeholder="https://..."
+                  />
+                </div>
+                <div>
+                  <label htmlFor="p5">Link repo</label>
+                  <input
+                    id="p5"
+                    type="url"
+                    value={projectForm.repo_url}
+                    onChange={(e) => setProjectForm({ ...projectForm, repo_url: e.target.value })}
+                    placeholder="https://github.com/..."
+                  />
+                </div>
+              </div>
+
+              <label htmlFor="p6">Gambar Project</label>
+              <input
+                id="p6"
+                type="file"
+                accept="image/*"
+                onChange={(e) => setProjectFile(e.target.files?.[0] || null)}
+              />
+              <p className="note">Format: image/* (PNG, JPG, WebP), maksimal 2 MB. Diunggah ke Supabase Storage.</p>
+
+              {/* Image Preview if available */}
+              {(projectFile || projectForm.image_url) && (
+                <div style={{ marginTop: '10px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div
+                    style={{
+                      width: '60px',
+                      height: '60px',
+                      border: '2px solid #141414',
+                      borderRadius: '8px',
+                      overflow: 'hidden',
+                      background: '#eee',
+                    }}
+                  >
+                    <img
+                      src={projectFile ? URL.createObjectURL(projectFile) : projectForm.image_url}
+                      alt="Preview"
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                  </div>
+                  <span style={{ fontSize: '0.8rem', color: '#555' }}>
+                    {projectFile ? `File baru: ${projectFile.name}` : 'Gambar tersimpan saat ini'}
+                  </span>
+                </div>
+              )}
+
+              <label htmlFor="p7">Status Publikasi</label>
+              <select
+                id="p7"
+                value={projectForm.published ? '1' : '0'}
+                onChange={(e) =>
+                  setProjectForm({ ...projectForm, published: e.target.value === '1' })
+                }
+              >
+                <option value="1">Tampil di website</option>
+                <option value="0">Draft (disembunyikan)</option>
+              </select>
+
+              {projectModalError && (
+                <div className="er" role="alert">
+                  {projectModalError}
+                </div>
+              )}
+
+              <div className="acts" style={{ marginTop: '22px' }}>
+                <button type="submit" className="btn" disabled={projectUploading}>
+                  <Icon name="save" /> {projectUploading ? 'Menyimpan...' : 'Simpan'}
+                </button>
+                <button
+                  type="button"
+                  className="btn w"
+                  onClick={() => setModalOpen(false)}
+                  disabled={projectUploading}
+                >
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

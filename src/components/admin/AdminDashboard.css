@@ -1,0 +1,669 @@
+/* LEGO Admin Dashboard Styles (Scoped) */
+.lego-admin-scope {
+  --adm-red: #b3121a;
+  --adm-yellow: #ffd500;
+  --adm-ink: #141414;
+  --adm-paper: #ffffff;
+  --adm-blue: #1f4fb4;
+  --adm-green: #1a9e4a;
+  --adm-muted: #5f5f5f;
+  --adm-soft: #f6f6f4;
+  --adm-pix: 'Pixelify Sans', ui-monospace, monospace;
+  --adm-body: 'Space Grotesk', system-ui, sans-serif;
+  
+  min-height: 100vh;
+  background: #ffffff;
+  color: var(--adm-ink);
+  font-family: var(--adm-body);
+  line-height: 1.45;
+  box-sizing: border-box;
+}
+
+.lego-admin-scope *,
+.lego-admin-scope *::before,
+.lego-admin-scope *::after {
+  box-sizing: border-box;
+}
+
+.lego-admin-scope svg.i {
+  width: 20px;
+  height: 20px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  flex: none;
+}
+
+.lego-admin-scope .shell {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  min-height: 100vh;
+}
+
+.lego-admin-scope aside {
+  background: var(--adm-paper);
+  color: var(--adm-ink);
+  border-right: 2px solid var(--adm-ink);
+  padding: 22px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  z-index: 30;
+}
+
+.lego-admin-scope .brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 0 6px 22px;
+  font-family: var(--adm-pix);
+  font-weight: 700;
+  font-size: 1.15rem;
+  line-height: 1.1;
+}
+
+.lego-admin-scope .brand small {
+  display: block;
+  font-family: var(--adm-body);
+  font-weight: 500;
+  font-size: 0.72rem;
+  color: var(--adm-muted);
+  letter-spacing: 0.08em;
+}
+
+.lego-admin-scope .logo {
+  width: 36px;
+  height: 36px;
+}
+
+.lego-admin-scope .nv {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font: 500 0.95rem var(--adm-body);
+  color: var(--adm-ink);
+  background: none;
+  border: 2px solid transparent;
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  text-align: left;
+  width: 100%;
+  transition: background 0.15s, border-color 0.15s;
+}
+
+.lego-admin-scope .nv:hover {
+  background: var(--adm-soft);
+}
+
+.lego-admin-scope .nv.on {
+  background: var(--adm-yellow);
+  border-color: var(--adm-ink);
+  box-shadow: 2px 2px 0 var(--adm-ink);
+  font-weight: 700;
+}
+
+.lego-admin-scope .sp {
+  flex: 1;
+}
+
+.lego-admin-scope main {
+  padding: 32px clamp(18px, 4vw, 48px) 90px;
+  max-width: 1040px;
+  width: 100%;
+}
+
+.lego-admin-scope .ph {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 26px;
+}
+
+.lego-admin-scope h1 {
+  font-family: var(--adm-pix);
+  font-weight: 700;
+  font-size: 1.9rem;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.lego-admin-scope .sub {
+  margin: 4px 0 0;
+  color: var(--adm-muted);
+}
+
+.lego-admin-scope .card {
+  background: var(--adm-paper);
+  color: var(--adm-ink);
+  border: 2px solid var(--adm-ink);
+  border-radius: 14px;
+  box-shadow: 3px 3px 0 var(--adm-ink);
+  padding: 20px;
+  margin-bottom: 22px;
+}
+
+.lego-admin-scope .card h2 {
+  font-family: var(--adm-pix);
+  font-size: 1rem;
+  margin: 0 0 12px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.lego-admin-scope .stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
+  gap: 18px;
+  margin-bottom: 22px;
+}
+
+.lego-admin-scope .stat {
+  background: var(--adm-paper);
+  color: var(--adm-ink);
+  border: 2px solid var(--adm-ink);
+  border-radius: 14px;
+  box-shadow: 3px 3px 0 var(--adm-ink);
+  padding: 16px 18px 14px;
+  position: relative;
+  margin-top: 8px;
+}
+
+.lego-admin-scope .stat::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: -9px;
+  width: 46px;
+  height: 9px;
+  background: radial-gradient(circle at 50% 100%, var(--c) 0 3.5px, var(--adm-ink) 3.5px 6px, transparent 6.2px) 0 0/23px 9px repeat-x;
+}
+
+.lego-admin-scope .stat b {
+  font-size: 2.1rem;
+  line-height: 1.1;
+  display: block;
+  font-weight: 700;
+}
+
+.lego-admin-scope .stat span {
+  font-size: 0.82rem;
+  color: var(--adm-muted);
+}
+
+.lego-admin-scope .two {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 22px;
+}
+
+.lego-admin-scope .btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: 700 0.92rem var(--adm-body);
+  color: #fff;
+  background: var(--adm-red);
+  border: 2px solid var(--adm-ink);
+  border-radius: 10px;
+  box-shadow: 3px 3px 0 var(--adm-ink);
+  padding: 9px 16px;
+  cursor: pointer;
+  transition: transform 0.1s, box-shadow 0.1s;
+  text-decoration: none;
+}
+
+.lego-admin-scope .btn.w {
+  background: #fff;
+  color: var(--adm-ink);
+}
+
+.lego-admin-scope .btn:hover:not(:disabled) {
+  transform: translate(1px, 1px);
+  box-shadow: 2px 2px 0 var(--adm-ink);
+}
+
+.lego-admin-scope .btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.lego-admin-scope .ib {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: #fff;
+  color: var(--adm-ink);
+  border: 2px solid var(--adm-ink);
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 0.1s;
+}
+
+.lego-admin-scope .ib:hover {
+  background: var(--adm-yellow);
+}
+
+.lego-admin-scope .ib.d:hover {
+  background: #ffd9db;
+}
+
+.lego-admin-scope button:focus-visible,
+.lego-admin-scope input:focus-visible,
+.lego-admin-scope textarea:focus-visible,
+.lego-admin-scope select:focus-visible {
+  outline: 3px solid var(--adm-blue);
+  outline-offset: 2px;
+}
+
+.lego-admin-scope .row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 13px 0;
+  border-top: 1px solid #dcdcd6;
+}
+
+.lego-admin-scope .row:first-of-type {
+  border-top: 0;
+  padding-top: 2px;
+}
+
+.lego-admin-scope .th {
+  width: 40px;
+  height: 40px;
+  border: 2px solid var(--adm-ink);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 700 1.1rem var(--adm-pix);
+  flex: none;
+  overflow: hidden;
+}
+
+.lego-admin-scope .th img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lego-admin-scope .tx {
+  flex: 1;
+  min-width: 0;
+}
+
+.lego-admin-scope .tx b {
+  display: block;
+  font-weight: 700;
+  word-break: break-word;
+}
+
+.lego-admin-scope .tx p {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--adm-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lego-admin-scope .tg {
+  display: inline-block;
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  background: var(--adm-ink);
+  color: #fff;
+  border-radius: 5px;
+  padding: 1px 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.lego-admin-scope .chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 6px;
+}
+
+.lego-admin-scope .chips span {
+  font-size: 0.75rem;
+  background: var(--adm-soft);
+  border: 1.5px solid #cfcfc8;
+  border-radius: 6px;
+  padding: 0 8px;
+}
+
+.lego-admin-scope .sw {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.8rem;
+  color: var(--adm-muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  padding: 0;
+  min-width: 92px;
+}
+
+.lego-admin-scope .sw i {
+  width: 42px;
+  height: 24px;
+  border: 2px solid var(--adm-ink);
+  border-radius: 12px;
+  background: #d8d8d2;
+  position: relative;
+  transition: background 0.15s;
+  flex: none;
+}
+
+.lego-admin-scope .sw i::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: var(--adm-ink);
+  transition: transform 0.15s;
+}
+
+.lego-admin-scope .sw[aria-checked="true"] i {
+  background: var(--adm-green);
+}
+
+.lego-admin-scope .sw[aria-checked="true"] i::after {
+  transform: translateX(18px);
+  background: #fff;
+}
+
+.lego-admin-scope .acts {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+.lego-admin-scope label {
+  display: block;
+  font-weight: 700;
+  font-size: 0.82rem;
+  margin: 16px 0 6px;
+}
+
+.lego-admin-scope label:first-child {
+  margin-top: 0;
+}
+
+.lego-admin-scope input,
+.lego-admin-scope textarea,
+.lego-admin-scope select {
+  width: 100%;
+  font: inherit;
+  color: var(--adm-ink);
+  background: #fff;
+  border: 2px solid var(--adm-ink);
+  border-radius: 9px;
+  padding: 9px 12px;
+}
+
+.lego-admin-scope textarea {
+  min-height: 96px;
+  resize: vertical;
+}
+
+.lego-admin-scope .g2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0 16px;
+}
+
+.lego-admin-scope .form {
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  gap: 22px;
+  align-items: start;
+}
+
+.lego-admin-scope .pvbox {
+  position: sticky;
+  top: 20px;
+}
+
+.lego-admin-scope .pv {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--adm-yellow);
+  border: 2px solid var(--adm-ink);
+  border-radius: 8px;
+  box-shadow: 2px 2px 0 var(--adm-ink);
+  padding: 3px 12px;
+  font: 700 0.8rem var(--adm-pix);
+}
+
+.lego-admin-scope .pvn {
+  font-weight: 700;
+  font-size: 1.8rem;
+  letter-spacing: -0.04em;
+  line-height: 1;
+  margin: 14px 0 10px;
+}
+
+.lego-admin-scope .pvn span {
+  color: var(--adm-red);
+  display: block;
+}
+
+.lego-admin-scope .pvbox p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+.lego-admin-scope .av {
+  width: 36px;
+  height: 36px;
+  border: 2px solid var(--adm-ink);
+  border-radius: 8px;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  font: 700 1rem var(--adm-pix);
+  flex: none;
+  overflow: hidden;
+}
+
+.lego-admin-scope .av img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.lego-admin-scope .avg {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.lego-admin-scope .avg b {
+  font-size: 2.4rem;
+  line-height: 1;
+}
+
+.lego-admin-scope .avg span {
+  color: var(--adm-muted);
+}
+
+.lego-admin-scope .star {
+  color: var(--adm-yellow);
+  -webkit-text-stroke: 1.5px var(--adm-ink);
+  font-size: 1.4rem;
+  letter-spacing: 2px;
+}
+
+.lego-admin-scope .empty {
+  color: var(--adm-muted);
+  padding: 8px 0;
+}
+
+.lego-admin-scope .lg {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 24px;
+}
+
+.lego-admin-scope .lg .card {
+  max-width: 440px;
+  width: 100%;
+  text-align: center;
+  padding: 32px 24px;
+}
+
+.lego-admin-scope .lg .logo {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 12px;
+}
+
+/* Modal Backdrop & Dialog */
+.lego-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: grid;
+  place-items: center;
+  z-index: 999;
+  padding: 16px;
+  overflow-y: auto;
+}
+
+.lego-modal-content {
+  border: 2px solid var(--adm-ink, #141414);
+  border-radius: 16px;
+  box-shadow: 5px 5px 0 var(--adm-ink, #141414);
+  padding: 24px;
+  max-width: 560px;
+  width: 100%;
+  background: #ffffff;
+  color: var(--adm-ink, #141414);
+  position: relative;
+  font-family: 'Space Grotesk', system-ui, sans-serif;
+}
+
+.lego-modal-content h2 {
+  font-family: 'Pixelify Sans', ui-monospace, monospace;
+  margin: 0 0 16px;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+.lego-admin-scope .er {
+  color: var(--adm-red);
+  font-weight: 700;
+  min-height: 1.3em;
+  margin-top: 10px;
+  font-size: 0.85rem;
+}
+
+.lego-admin-scope .note {
+  font-size: 0.78rem;
+  color: var(--adm-muted);
+  margin: 6px 0 0;
+}
+
+.lego-admin-toast {
+  position: fixed;
+  left: 50%;
+  bottom: 80px;
+  transform: translateX(-50%);
+  background: #141414;
+  color: #fff;
+  font-weight: 700;
+  font-size: 0.9rem;
+  padding: 10px 18px;
+  border-radius: 10px;
+  border: 2px solid #ffd500;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.25);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s, transform 0.2s;
+  z-index: 1000;
+}
+
+.lego-admin-toast.on {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+
+@media (max-width: 820px) {
+  .lego-admin-scope .shell {
+    display: block;
+  }
+  .lego-admin-scope aside {
+    position: fixed;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: auto;
+    flex-direction: row;
+    border-right: 0;
+    border-top: 2px solid var(--adm-ink);
+    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    gap: 2px;
+  }
+  .lego-admin-scope .brand,
+  .lego-admin-scope .sp,
+  .lego-admin-scope .lo {
+    display: none;
+  }
+  .lego-admin-scope .nv {
+    flex-direction: column;
+    gap: 2px;
+    font-size: 0.7rem;
+    padding: 6px 2px;
+    align-items: center;
+    justify-content: center;
+    text-align: center;
+  }
+  .lego-admin-scope .nv.on {
+    box-shadow: none;
+  }
+  .lego-admin-scope .two,
+  .lego-admin-scope .form,
+  .lego-admin-scope .g2 {
+    display: block;
+  }
+  .lego-admin-scope .pvbox {
+    position: static;
+    margin-top: 20px;
+  }
+  .lego-admin-scope .row {
+    flex-wrap: wrap;
+  }
+  .lego-admin-scope .sw {
+    min-width: 0;
+  }
+  .lego-admin-scope .tx p {
+    white-space: normal;
+  }
+  .lego-admin-scope main {
+    padding-bottom: 100px;
+  }
+}

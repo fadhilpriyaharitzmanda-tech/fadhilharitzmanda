@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { projects } from '../data/portfolioData';
+import { projects as defaultProjects } from '../data/portfolioData';
+import { useSiteData } from '../context/SiteContext';
 import DetailModal from './DetailModal';
 
 function getCategoryBadgeClass(category) {
@@ -24,11 +25,14 @@ export default function ProjectsSection() {
   const [activeCategory, setActiveCategory] = useState('All');
   const [showAllProjects, setShowAllProjects] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
+  const { projects: siteProjects } = useSiteData();
+
+  const allProjects = siteProjects && siteProjects.length > 0 ? siteProjects : defaultProjects;
 
   const filteredProjects =
     activeCategory === 'All'
-      ? projects
-      : projects.filter((p) => p.category === activeCategory);
+      ? allProjects
+      : allProjects.filter((p) => p.category === activeCategory);
 
   const displayedProjects = showAllProjects
     ? filteredProjects
@@ -114,21 +118,28 @@ export default function ProjectsSection() {
                 <p className="font-body-md text-on-surface-variant text-[13px] line-clamp-3 leading-relaxed mb-4">
                   {project.description}
                 </p>
-                <div className="flex flex-wrap gap-1.5 mt-auto">
-                  {project.technologies.slice(0, 4).map((tech) => (
-                    <span
-                      key={tech}
-                      className="px-2 py-0.5 bg-surface-container border border-on-surface text-[10px] font-label-caps font-bold text-on-surface"
-                    >
-                      {tech}
-                    </span>
-                  ))}
-                  {project.technologies.length > 4 && (
-                    <span className="px-1.5 py-0.5 bg-surface-container-high border border-on-surface text-[10px] font-label-caps font-bold text-on-surface-variant">
-                      +{project.technologies.length - 4}
-                    </span>
-                  )}
-                </div>
+                {(() => {
+                  const techList = Array.isArray(project.technologies) && project.technologies.length > 0
+                    ? project.technologies
+                    : (project.tech ? project.tech.split(',').map((t) => t.trim()).filter(Boolean) : []);
+                  return (
+                    <div className="flex flex-wrap gap-1.5 mt-auto">
+                      {techList.slice(0, 4).map((tech) => (
+                        <span
+                          key={tech}
+                          className="px-2 py-0.5 bg-surface-container border border-on-surface text-[10px] font-label-caps font-bold text-on-surface"
+                        >
+                          {tech}
+                        </span>
+                      ))}
+                      {techList.length > 4 && (
+                        <span className="px-1.5 py-0.5 bg-surface-container-high border border-on-surface text-[10px] font-label-caps font-bold text-on-surface-variant">
+                          +{techList.length - 4}
+                        </span>
+                      )}
+                    </div>
+                  );
+                })()}
               </div>
             </div>
 

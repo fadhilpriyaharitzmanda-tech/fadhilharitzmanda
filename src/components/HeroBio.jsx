@@ -1,5 +1,6 @@
 import React, { useRef } from 'react';
 import { personalInfo } from '../data/portfolioData';
+import { useSiteData } from '../context/SiteContext';
 import LegoCar from './LegoCar';
 import WeatherTimeBadge from './WeatherTimeBadge';
 
@@ -12,6 +13,15 @@ const roleHoverStyles = [
 
 export default function HeroBio() {
   const frameRef = useRef(null);
+  const { siteProfile } = useSiteData();
+
+  const statusText = siteProfile?.status || 'STATUS: READY TO BUILD';
+  const firstName = siteProfile?.first_name || 'Fadhil priya';
+  const lastName = siteProfile?.last_name || 'haritzmanda';
+  const bioText = siteProfile?.bio || personalInfo.description;
+  const rolesList = siteProfile?.tags
+    ? siteProfile.tags.split(',').map((t) => t.trim()).filter(Boolean)
+    : personalInfo.roles;
 
   return (
     <section className="w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16 mb-32 pt-6">
@@ -22,26 +32,26 @@ export default function HeroBio() {
           <div className="inline-flex items-center gap-2 px-4 py-2 bg-brick-yellow border-4 border-on-surface brick-shadow w-fit">
             <span className="w-3 h-3 rounded-full bg-primary animate-pulse border-2 border-on-surface" />
             <span className="font-label-caps text-label-caps text-on-surface font-bold">
-              STATUS: READY TO BUILD
+              {statusText}
             </span>
           </div>
 
           {/* Heading */}
           <h1 className="font-display-lg-mobile md:font-display-lg text-display-lg-mobile md:text-display-lg text-on-surface uppercase">
-            Fadhil priya
+            {firstName}
             <br />
-            <span className="text-primary">haritzmanda</span>
+            <span className="text-primary">{lastName}</span>
           </h1>
 
           {/* Bio Brick Card */}
           <div className="brick-card p-6 max-w-xl bg-white">
-            <p className="font-body-lg text-body-lg text-on-surface">{personalInfo.description}</p>
+            <p className="font-body-lg text-body-lg text-on-surface">{bioText}</p>
             <div className="flex flex-wrap gap-2.5 mt-4">
-              {personalInfo.roles.map((role, idx) => {
+              {rolesList.map((role, idx) => {
                 const style = roleHoverStyles[idx % roleHoverStyles.length];
                 return (
                   <span
-                    key={role}
+                    key={`${role}-${idx}`}
                     className={`inline-block px-3 py-1.5 bg-surface-container border-2 border-on-surface font-label-caps text-[11px] font-bold text-on-surface cursor-pointer select-none transition-all duration-200 ease-out hover:scale-105 ${style.hover}`}
                   >
                     {role}

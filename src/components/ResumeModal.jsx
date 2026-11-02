@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { personalInfo } from '../data/portfolioData';
+import { useSiteData } from '../context/SiteContext';
 
 export default function ResumeModal({ isOpen, onClose }) {
   const [viewMode, setViewMode] = useState('doc'); // 'doc' or 'pdf'
@@ -28,7 +29,8 @@ export default function ResumeModal({ isOpen, onClose }) {
 
   if (!isOpen) return null;
 
-  const cvUrl = personalInfo.cv || '/cv/CV_Fadhil_Priya_Haritzmanda.pdf';
+  const { siteProfile } = useSiteData();
+  const cvUrl = siteProfile?.cv_url || personalInfo.cv || '/cv/CV_Fadhil_Priya_Haritzmanda.pdf';
 
   const handlePrint = () => {
     window.print();

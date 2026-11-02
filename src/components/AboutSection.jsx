@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { personalInfo, education } from '../data/portfolioData';
+import { useSiteData } from '../context/SiteContext';
 import DetailModal from './DetailModal';
 
 function AnimatedCounter({ target, suffix = '', duration = 1400 }) {
@@ -69,6 +70,8 @@ const statsList = [
 
 export default function AboutSection() {
   const [selectedEdu, setSelectedEdu] = useState(null);
+  const { siteProfile } = useSiteData();
+  const bioText = siteProfile?.bio || personalInfo.about.description;
 
   return (
     <section className="w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16 mb-32">
@@ -91,7 +94,7 @@ export default function AboutSection() {
                 {personalInfo.about.intro}
               </h3>
               <p className="font-body-md text-body-md text-on-surface mb-4 leading-relaxed">
-                {personalInfo.about.description}
+                {bioText}
               </p>
               <div className="mt-auto pt-4 border-t-2 border-on-surface flex items-center gap-2 text-xs font-bold text-on-surface-variant font-label-caps">
                 <span className="material-symbols-outlined text-primary text-[18px]">location_on</span>

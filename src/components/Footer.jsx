@@ -56,6 +56,13 @@ export default function Footer() {
           <div className="text-label-caps font-label-caps text-on-primary text-xs flex items-center justify-center md:justify-end gap-1">
             <span className="font-sans font-normal text-sm leading-none">©</span>
             <span>{currentYear} {personalInfo.name.toUpperCase()} • BUILT BY BRICK</span>
+            <a
+              href="/admin"
+              className="ml-2 text-white/40 hover:text-white transition-opacity inline-flex items-center"
+              title="Admin Panel"
+            >
+              <span className="material-symbols-outlined text-[13px]">lock</span>
+            </a>
           </div>
           <div className="text-[11px] text-white/70 font-label-caps mt-1">
             {personalInfo.location.toUpperCase()}
