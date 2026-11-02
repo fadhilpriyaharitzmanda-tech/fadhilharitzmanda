@@ -34,11 +34,10 @@ export default function GuestbookDrawer() {
   const [cooldown, setCooldown] = useState(0);
   const [isOtherModalOpen, setIsOtherModalOpen] = useState(false);
 
-  // Ratings State (separated from comments)
+  // Ratings State (separated from comments, fixed once given)
   const [ratings, setRatings] = useState([]);
   const [userRating, setUserRating] = useState(null);
   const [hoverRating, setHoverRating] = useState(0);
-  const [isEditingRating, setIsEditingRating] = useState(false);
   const [ratingSubmitting, setRatingSubmitting] = useState(false);
   const [ratingError, setRatingError] = useState('');
 
@@ -186,7 +185,6 @@ export default function GuestbookDrawer() {
       }
     } else if (!user) {
       setUserRating(null);
-      setIsEditingRating(false);
     }
   }, [user, ratings]);
 
@@ -275,16 +273,19 @@ export default function GuestbookDrawer() {
       await supabase.auth.signOut();
       setUser(null);
       setUserRating(null);
-      setIsEditingRating(false);
     } catch (err) {
       console.error('Logout error:', err);
     }
   };
 
-  // Save/Upsert rating to guestbook_ratings (1-5, single per user)
+  // Save rating to guestbook_ratings (locked permanently once chosen)
   const handleSaveRating = async (val) => {
     if (!user) {
       setRatingError('Anda harus login untuk memberi rating.');
+      return;
+    }
+    if (userRating) {
+      setRatingError('Rating sudah disimpan dan tidak dapat diubah.');
       return;
     }
     try {
@@ -300,7 +301,6 @@ export default function GuestbookDrawer() {
       if (error) throw error;
 
       setUserRating(val);
-      setIsEditingRating(false);
       await fetchRatings();
     } catch (err) {
       console.error('Error saving rating:', err);
@@ -444,11 +444,19 @@ export default function GuestbookDrawer() {
         aria-labelledby="gb-title"
         aria-hidden={!isOpen}
       >
-        {/* Header */}
+        {/* Header with Compact Rating Badge */}
         <header className="gb-hd">
           <div className="gb-ttl" id="gb-title">
             <span>GUESTBOOK</span>
             <span className="gb-live">LIVE</span>
+            {totalRatings > 0 && (
+              <span
+                className="gb-rating-badge"
+                title={`${avgRating} dari 5 bintang (${totalRatings} ulasan)`}
+              >
+                ★ {avgRating} <em>({totalRatings})</em>
+              </span>
+            )}
           </div>
           <button
             ref={closeBtnRef}
@@ -460,25 +468,6 @@ export default function GuestbookDrawer() {
             ESC &#10005;
           </button>
         </header>
-
-        {/* Rating Summary Bar at Top of Panel */}
-        <div className="gb-rating-bar" aria-label="Ringkasan Rating Portfolio">
-          <div className="gb-rating-stat-left">
-            <span className="gb-star-icon" aria-hidden="true">★</span>
-            <span className="font-mono font-bold text-[1.1rem] text-[#141414]">
-              {avgRating ? avgRating : '0.0'}
-            </span>
-            <span className="text-xs text-[#555] font-mono">
-              / 5.0 ({totalRatings} {totalRatings === 1 ? 'ulasan' : 'ulasan'})
-            </span>
-          </div>
-          <div className="gb-score-badge">
-            <span>{avgRating ? `${avgRating} ★` : '★ -.-'}</span>
-            <span className="text-[10px] uppercase font-bold tracking-wider opacity-80">
-              {totalRatings > 0 ? 'Skor' : 'Belum Ada'}
-            </span>
-          </div>
-        </div>
 
         {/* Configuration Notice if Supabase not set up */}
         {!isSupabaseConfigured && (
@@ -667,7 +656,7 @@ export default function GuestbookDrawer() {
                       </span>
                     </div>
 
-                    {/* Message Bubble with LEGO Studs (Rating stars removed per user request) */}
+                    {/* Message Bubble with LEGO Studs */}
                     <div className="gb-bb gb-st">
                       {/* XSS Safe Text Content via native React JSX escaping */}
                       <p>{msg.message}</p>
@@ -701,42 +690,29 @@ export default function GuestbookDrawer() {
             </div>
           ) : (
             <div>
-              {/* Rating Section: Single rating per user with Upsert and Edit */}
-              {userRating && !isEditingRating ? (
-                <div className="gb-my-rating">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs font-bold text-[#141414]">
-                      Rating kamu:
-                    </span>
-                    <span className="bg-[#141414] text-[#ffd500] px-1.5 py-0.5 font-mono font-bold text-xs">
+              {/* Rating Section: Permanent once user gives a rating */}
+              {userRating ? (
+                <div className="gb-my-rating-fixed">
+                  <span className="text-xs font-mono font-bold text-[#141414] flex items-center gap-1.5">
+                    <span>Rating kamu:</span>
+                    <span className="bg-[#141414] text-[#ffd500] px-1.5 py-0.5 text-xs rounded-sm">
                       {userRating} ★
                     </span>
-                    <span className="text-[11px] text-[#555]">
-                      ({userRating} dari 5 bintang)
+                    <span className="text-[11px] text-[#666] font-normal">
+                      (sudah terkirim)
                     </span>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsEditingRating(true)}
-                    className="gb-edit-rating-btn"
-                    aria-label="Ubah rating"
-                  >
-                    Ubah
-                  </button>
+                  </span>
                 </div>
               ) : (
                 <div className="gb-rr">
-                  <span id="rating-label">
-                    {isEditingRating ? 'Ubah rating kamu:' : 'Beri rating (opsional):'}
-                  </span>
+                  <span id="rating-label">Beri rating (opsional):</span>
                   <div
                     className="gb-stars"
                     role="radiogroup"
                     aria-labelledby="rating-label"
                   >
                     {[1, 2, 3, 4, 5].map((val) => {
-                      const active =
-                        (hoverRating || (isEditingRating ? userRating : 0)) >= val;
+                      const active = (hoverRating || 0) >= val;
                       return (
                         <button
                           key={val}
@@ -759,15 +735,6 @@ export default function GuestbookDrawer() {
                       );
                     })}
                   </div>
-                  {isEditingRating && (
-                    <button
-                      type="button"
-                      onClick={() => setIsEditingRating(false)}
-                      className="text-xs text-[#555] underline hover:text-[#141414] ml-auto font-mono cursor-pointer"
-                    >
-                      Batal
-                    </button>
-                  )}
                   {ratingSubmitting && (
                     <span className="text-xs font-mono text-[#555] animate-pulse">
                       Menyimpan...
