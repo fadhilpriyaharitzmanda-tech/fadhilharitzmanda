@@ -48,6 +48,22 @@ export default function App() {
   const [currentPath, setCurrentPath] = useState(() => window.location.pathname);
 
   useEffect(() => {
+    // If user previously clicked admin login, or returned from OAuth for admin, restore route to /admin
+    const isPendingAdmin =
+      localStorage.getItem('admin_login_pending') === 'true' ||
+      sessionStorage.getItem('admin_login_pending') === 'true';
+
+    const hasAuthCallback =
+      window.location.hash.includes('access_token') ||
+      window.location.search.includes('code=');
+
+    if (isPendingAdmin && (hasAuthCallback || window.location.pathname === '/')) {
+      if (window.location.pathname !== '/admin') {
+        window.history.replaceState({}, '', '/admin');
+        setCurrentPath('/admin');
+      }
+    }
+
     const handlePopState = () => {
       setCurrentPath(window.location.pathname);
     };
@@ -62,7 +78,12 @@ export default function App() {
     window.scrollTo(0, 0);
   };
 
-  const isAdminRoute = currentPath === '/admin' || currentPath.startsWith('/admin/');
+  const cleanPath = currentPath.toLowerCase().replace(/\/+$/, '');
+  const isAdminRoute =
+    cleanPath === '/admin' ||
+    cleanPath.startsWith('/admin/') ||
+    window.location.hash === '#/admin' ||
+    window.location.hash.startsWith('#/admin');
 
   return (
     <SiteProvider>

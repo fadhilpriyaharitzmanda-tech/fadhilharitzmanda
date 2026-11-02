@@ -45,6 +45,8 @@ export default function AdminGate({ onNavigateHome }) {
       }
 
       // Exactly true -> 'ok'
+      localStorage.removeItem('admin_login_pending');
+      sessionStorage.removeItem('admin_login_pending');
       setStatus('ok');
     } catch (err) {
       console.warn('Network or RPC exception in is_admin (fail-closed):', err);
@@ -96,22 +98,30 @@ export default function AdminGate({ onNavigateHome }) {
   const handleLogin = async () => {
     setAuthError('');
     try {
+      localStorage.setItem('admin_login_pending', 'true');
+      sessionStorage.setItem('admin_login_pending', 'true');
+
+      const redirectUrl = `${window.location.origin}/admin`;
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'github',
         options: {
-          redirectTo: `${window.location.origin}/admin`,
+          redirectTo: redirectUrl,
         },
       });
       if (error) throw error;
     } catch (err) {
       console.error('GitHub login error:', err);
       setAuthError(err.message || 'Gagal memulai login dengan GitHub.');
+      localStorage.removeItem('admin_login_pending');
+      sessionStorage.removeItem('admin_login_pending');
     }
   };
 
   // Action: Sign Out
   const handleLogout = async () => {
     try {
+      localStorage.removeItem('admin_login_pending');
+      sessionStorage.removeItem('admin_login_pending');
       await supabase.auth.signOut();
     } catch (err) {
       console.error('SignOut error:', err);
@@ -267,3 +277,4 @@ export default function AdminGate({ onNavigateHome }) {
     />
   );
 }
+
