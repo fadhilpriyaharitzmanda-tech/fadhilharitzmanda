@@ -14,6 +14,7 @@ import {
   fetchRatingsSummary,
   importDefaultProjectsToSupabase,
 } from '../../services/siteService';
+import { projects as defaultProjects } from '../../data/portfolioData';
 import { useSiteData } from '../../context/SiteContext';
 import './AdminDashboard.css';
 
@@ -173,7 +174,20 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
         });
       }
 
-      setProjectsList(projsData || []);
+      let currentProjs = projsData || [];
+      // If database has 0 projects, auto-import the 4 default projects so they are stored in DB
+      if (currentProjs.length === 0) {
+        try {
+          const importRes = await importDefaultProjectsToSupabase();
+          if (importRes && importRes.count > 0) {
+            currentProjs = await fetchAllProjectsAdmin();
+          }
+        } catch (importErr) {
+          console.warn('Auto-import default projects to database:', importErr);
+        }
+      }
+
+      setProjectsList(currentProjs);
       setGuestMessages(msgsData || []);
       setRatingsInfo(ratingData || { average: '0.0', count: 0, ratings: [] });
     } catch (err) {
@@ -268,6 +282,35 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     });
     setProjectModalError('');
     setModalOpen(true);
+  };
+
+  // Populate project form one-by-one from a default project preset
+  const fillFromDefaultProject = (p) => {
+    const imagesArr = p.images
+      ? p.images.map((img) => (typeof img === 'string' ? img : img.src))
+      : (p.image ? [p.image] : []);
+
+    const hl = Array.isArray(p.features)
+      ? p.features.join('\n')
+      : (Array.isArray(p.highlights) ? p.highlights.join('\n') : '');
+
+    setProjectForm((prev) => ({
+      ...prev,
+      title: p.title || '',
+      category: p.category || 'Web',
+      year: parseInt(p.year, 10) || 2026,
+      description: p.description || '',
+      problem_context: p.problem || p.overview || '',
+      solution: p.solution || '',
+      highlightsText: hl,
+      tech: p.technologies ? p.technologies.join(', ') : (p.tech || ''),
+      repo_url: p.links?.github || p.repo_url || '',
+      demo_url: p.links?.demo || p.demo_url || '',
+      images: imagesArr,
+      published: true,
+    }));
+    setProjectModalError('');
+    showToast(`Form diisi dengan data: ${p.title.split(' - ')[0]}`);
   };
 
   // Open Project Modal - Edit Existing
@@ -989,6 +1032,36 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
           >
             <h2>{editingProject ? 'Edit project' : 'Project baru'}</h2>
 
+            {!editingProject && (
+              <div
+                style={{
+                  marginBottom: '16px',
+                  padding: '10px 14px',
+                  background: 'var(--adm-soft)',
+                  border: '2px dashed var(--adm-ink)',
+                  borderRadius: '9px',
+                }}
+              >
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+                  💡 Isi otomatis dari 4 project bawaan:
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {defaultProjects.map((p) => (
+                    <button
+                      key={p.id}
+                      type="button"
+                      className="btn w"
+                      style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
+                      onClick={() => fillFromDefaultProject(p)}
+                      title={`Isi form dengan data ${p.title}`}
+                    >
+                      {p.title.split(' - ')[0]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             <form onSubmit={handleSaveProjectModal}>
               <div className="g2">
                 <div>
@@ -1074,7 +1147,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 placeholder="React.js, Tailwind CSS, Supabase"
               />
 
-              <div className="g2">
+              <div className="g2 g2-spaced" style={{ marginTop: '16px' }}>
                 <div>
                   <label htmlFor="p5">GitHub repo (diawali https://)</label>
                   <input

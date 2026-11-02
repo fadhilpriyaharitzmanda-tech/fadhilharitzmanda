@@ -431,6 +431,11 @@
   gap: 0 16px;
 }
 
+.lego-admin-scope .g2:not(:first-child),
+.lego-admin-scope .g2-spaced {
+  margin-top: 16px;
+}
+
 .lego-admin-scope .form {
   display: grid;
   grid-template-columns: 1.25fr 1fr;

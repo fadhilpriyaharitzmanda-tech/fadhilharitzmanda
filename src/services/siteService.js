@@ -211,10 +211,18 @@ export const importDefaultProjectsToSupabase = async () => {
     return { count: 0, message: 'Semua 4 project bawaan sudah ada di database.' };
   }
 
-  const { data, error } = await supabase.from('projects').insert(toInsert).select();
-  if (error) throw error;
+  // Insert rows one by one to ensure each is saved and robust against single-item errors
+  const inserted = [];
+  for (const item of toInsert) {
+    const { data, error } = await supabase.from('projects').insert([item]).select().single();
+    if (error) {
+      console.error(`Gagal menyimpan project "${item.title}":`, error);
+    } else if (data) {
+      inserted.push(data);
+    }
+  }
 
-  return { count: data.length, data };
+  return { count: inserted.length, data: inserted };
 };
 
 /**
