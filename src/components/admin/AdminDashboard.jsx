@@ -1,7 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { supabase, isSupabaseConfigured } from '../../lib/supabase';
 import {
-  checkIsAdmin,
   fetchSiteProfile,
   updateSiteProfile,
   fetchAllProjectsAdmin,
@@ -69,13 +67,8 @@ const Icon = ({ name }) => {
   );
 };
 
-export default function AdminDashboard({ onNavigateHome }) {
+export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
   const { refreshSiteData } = useSiteData();
-
-  // Auth states
-  const [authLoading, setAuthLoading] = useState(true);
-  const [currentUser, setCurrentUser] = useState(null);
-  const [isAdminUser, setIsAdminUser] = useState(false);
 
   // Active view
   const [view, setView] = useState('home'); // 'home' | 'profile' | 'projects' | 'guest'
@@ -127,62 +120,8 @@ export default function AdminDashboard({ onNavigateHome }) {
   const [projectUploading, setProjectUploading] = useState(false);
   const [projectModalError, setProjectModalError] = useState('');
 
-  // 1. Check Authentication & RPC is_admin
-  useEffect(() => {
-    let isMounted = true;
-
-    const verifySession = async () => {
-      setAuthLoading(true);
-      try {
-        if (!isSupabaseConfigured) {
-          setIsAdminUser(false);
-          setCurrentUser(null);
-          return;
-        }
-
-        const { data: { session } } = await supabase.auth.getSession();
-        if (!isMounted) return;
-
-        if (session?.user) {
-          setCurrentUser(session.user);
-          const adminStatus = await checkIsAdmin();
-          if (!isMounted) return;
-          setIsAdminUser(adminStatus);
-        } else {
-          setCurrentUser(null);
-          setIsAdminUser(false);
-        }
-      } catch (err) {
-        console.error('Auth verification error:', err);
-      } finally {
-        if (isMounted) setAuthLoading(false);
-      }
-    };
-
-    verifySession();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      if (!isMounted) return;
-      if (session?.user) {
-        setCurrentUser(session.user);
-        const adminStatus = await checkIsAdmin();
-        if (!isMounted) return;
-        setIsAdminUser(adminStatus);
-      } else {
-        setCurrentUser(null);
-        setIsAdminUser(false);
-      }
-    });
-
-    return () => {
-      isMounted = false;
-      subscription?.unsubscribe();
-    };
-  }, []);
-
-  // 2. Fetch data when admin user is verified
+  // Fetch all admin data (only runs when AdminGate grants status === 'ok')
   const loadAdminData = async () => {
-    if (!isAdminUser) return;
     try {
       setProjectsLoading(true);
       setGuestLoading(true);
@@ -218,37 +157,8 @@ export default function AdminDashboard({ onNavigateHome }) {
   };
 
   useEffect(() => {
-    if (isAdminUser) {
-      loadAdminData();
-    }
-  }, [isAdminUser]);
-
-  // Auth Handlers
-  const handleLoginGitHub = async () => {
-    try {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'github',
-        options: {
-          redirectTo: `${window.location.origin}/admin`,
-        },
-      });
-      if (error) throw error;
-    } catch (err) {
-      console.error('GitHub login error:', err);
-      showToast(err.message || 'Gagal login dengan GitHub.');
-    }
-  };
-
-  const handleLogout = async () => {
-    try {
-      await supabase.auth.signOut();
-      setCurrentUser(null);
-      setIsAdminUser(false);
-      showToast('Berhasil keluar.');
-    } catch (err) {
-      console.error('Logout error:', err);
-    }
-  };
+    loadAdminData();
+  }, []);
 
   // Profile Save Handler
   const handleSaveProfile = async (e) => {
@@ -416,116 +326,6 @@ export default function AdminDashboard({ onNavigateHome }) {
       .map((chip, idx) => <span key={idx}>{chip}</span>);
   };
 
-  // 1. Loading screen
-  if (authLoading) {
-    return (
-      <div className="lego-admin-scope">
-        <div className="lg">
-          <div className="card">
-            <LegoLogo />
-            <h1>Admin Panel</h1>
-            <p className="sub" style={{ marginTop: '12px' }}>
-              Memverifikasi otentikasi & hak akses...
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 2. Not logged in screen
-  if (!currentUser) {
-    return (
-      <div className="lego-admin-scope">
-        <div className="lg">
-          <div className="card">
-            <LegoLogo />
-            <h1 style={{ fontSize: '1.6rem' }}>Admin</h1>
-            <p className="sub" style={{ marginBottom: '22px' }}>
-              Halaman ini khusus pemilik website. Masuk dengan akun GitHub yang terdaftar sebagai admin.
-            </p>
-            <button
-              className="btn"
-              onClick={handleLoginGitHub}
-              style={{ background: '#1c1c1c', width: '100%', justifyContent: 'center' }}
-            >
-              <svg className="i" viewBox="0 0 24 24" fill="currentColor">
-                <path fillRule="evenodd" clipRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" />
-              </svg>
-              Masuk dengan GitHub
-            </button>
-            <div style={{ marginTop: '20px' }}>
-              <button
-                type="button"
-                className="btn w"
-                onClick={onNavigateHome}
-                style={{ width: '100%', justifyContent: 'center' }}
-              >
-                <Icon name="back" /> Kembali ke Website
-              </button>
-            </div>
-            <p className="note" style={{ marginTop: '16px' }}>
-              Keamanan sebenarnya dikontrol oleh kebijakan RLS Supabase (hanya akun terdaftar di public.is_admin() yang berhak mengubah data).
-            </p>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 3. Logged in but not admin screen
-  if (!isAdminUser) {
-    return (
-      <div className="lego-admin-scope">
-        <div className="lg">
-          <div className="card">
-            <div
-              style={{
-                width: '60px',
-                height: '60px',
-                borderRadius: '50%',
-                background: '#ffd9db',
-                border: '2px solid #b3121a',
-                display: 'grid',
-                placeItems: 'center',
-                margin: '0 auto 14px',
-                color: '#b3121a',
-              }}
-            >
-              <svg className="i" style={{ width: '32px', height: '32px' }} viewBox="0 0 24 24">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                <path d="M12 8v4M12 16h.01" />
-              </svg>
-            </div>
-            <h1 style={{ fontSize: '1.6rem', color: '#b3121a' }}>Akses Ditolak</h1>
-            <p className="sub" style={{ margin: '12px 0 20px' }}>
-              Akun GitHub kamu (<b>{currentUser.email || currentUser.user_metadata?.user_name || 'pengguna'}</b>) tidak terdaftar sebagai administrator.
-            </p>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-              <button
-                type="button"
-                className="btn"
-                onClick={handleLogout}
-                style={{ justifyContent: 'center' }}
-              >
-                <Icon name="out" /> Keluar (Logout)
-              </button>
-              <button
-                type="button"
-                className="btn w"
-                onClick={onNavigateHome}
-                style={{ justifyContent: 'center' }}
-              >
-                <Icon name="back" /> Kembali ke Website
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
-  // 4. Authenticated Admin Shell
   const publishedCount = projectsList.filter((p) => p.published).length;
 
   return (
@@ -547,6 +347,7 @@ export default function AdminDashboard({ onNavigateHome }) {
           </div>
 
           <button
+            type="button"
             className={`nv ${view === 'home' ? 'on' : ''}`}
             onClick={() => {
               setView('home');
@@ -556,6 +357,7 @@ export default function AdminDashboard({ onNavigateHome }) {
             <Icon name="home" /> Ringkasan
           </button>
           <button
+            type="button"
             className={`nv ${view === 'profile' ? 'on' : ''}`}
             onClick={() => {
               setView('profile');
@@ -565,6 +367,7 @@ export default function AdminDashboard({ onNavigateHome }) {
             <Icon name="user" /> Profil
           </button>
           <button
+            type="button"
             className={`nv ${view === 'projects' ? 'on' : ''}`}
             onClick={() => {
               setView('projects');
@@ -574,6 +377,7 @@ export default function AdminDashboard({ onNavigateHome }) {
             <Icon name="proj" /> Project
           </button>
           <button
+            type="button"
             className={`nv ${view === 'guest' ? 'on' : ''}`}
             onClick={() => {
               setView('guest');
@@ -597,7 +401,7 @@ export default function AdminDashboard({ onNavigateHome }) {
           <button
             type="button"
             className="nv lo"
-            onClick={handleLogout}
+            onClick={onLogout}
             title="Keluar dari akun admin"
           >
             <Icon name="out" /> Keluar

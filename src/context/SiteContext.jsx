@@ -72,3 +72,4 @@ export const SiteProvider = ({ children }) => {
 };
 
 export const useSiteData = () => useContext(SiteContext);
+

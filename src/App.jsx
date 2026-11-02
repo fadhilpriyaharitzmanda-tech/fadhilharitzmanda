@@ -14,7 +14,7 @@ import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
 import GuestbookDrawer from './components/GuestbookDrawer';
 import LegoMinifiguresStage from './components/LegoMinifiguresStage';
-import AdminDashboard from './components/admin/AdminDashboard';
+import AdminGate from './components/admin/AdminGate';
 import { SiteProvider } from './context/SiteContext';
 
 function PublicPortfolio() {
@@ -67,7 +67,7 @@ export default function App() {
   return (
     <SiteProvider>
       {isAdminRoute ? (
-        <AdminDashboard onNavigateHome={() => navigateTo('/')} />
+        <AdminGate onNavigateHome={() => navigateTo('/')} />
       ) : (
         <PublicPortfolio />
       )}

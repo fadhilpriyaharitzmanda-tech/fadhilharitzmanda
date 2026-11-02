@@ -28,7 +28,7 @@ export const checkIsAdmin = async () => {
       console.warn('RPC is_admin error:', error.message);
       return false;
     }
-    return Boolean(data);
+    return data === true;
   } catch (err) {
     console.warn('checkIsAdmin exception:', err);
     return false;
