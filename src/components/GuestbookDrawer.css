@@ -402,16 +402,6 @@
   color: var(--gb-ink);
   flex-wrap: wrap;
 }
-.gb-my-rating-fixed {
-  display: flex;
-  align-items: center;
-  background: #ffffff;
-  border: 3px solid var(--gb-ink);
-  box-shadow: 3px 3px 0 var(--gb-ink);
-  padding: 6px 12px;
-  margin-bottom: 10px;
-  font-family: var(--gb-pix);
-}
 .gb-stars {
   display: flex;
   gap: 4px;

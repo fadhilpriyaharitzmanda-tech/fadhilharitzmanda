@@ -690,20 +690,8 @@ export default function GuestbookDrawer() {
             </div>
           ) : (
             <div>
-              {/* Rating Section: Permanent once user gives a rating */}
-              {userRating ? (
-                <div className="gb-my-rating-fixed">
-                  <span className="text-xs font-mono font-bold text-[#141414] flex items-center gap-1.5">
-                    <span>Rating kamu:</span>
-                    <span className="bg-[#141414] text-[#ffd500] px-1.5 py-0.5 text-xs rounded-sm">
-                      {userRating} ★
-                    </span>
-                    <span className="text-[11px] text-[#666] font-normal">
-                      (sudah terkirim)
-                    </span>
-                  </span>
-                </div>
-              ) : (
+              {/* Rating Section: Only visible if user has not yet submitted a rating */}
+              {!userRating && (
                 <div className="gb-rr">
                   <span id="rating-label">Beri rating (opsional):</span>
                   <div
