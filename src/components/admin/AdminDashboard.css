@@ -42,6 +42,10 @@
   min-height: 100vh;
 }
 
+.lego-admin-scope .shell > * {
+  min-width: 0;
+}
+
 .lego-admin-scope aside {
   background: var(--adm-paper);
   color: var(--adm-ink);
@@ -114,8 +118,8 @@
 
 .lego-admin-scope main {
   padding: 32px clamp(18px, 4vw, 48px) 90px;
-  max-width: 1040px;
   width: 100%;
+  min-width: 0;
 }
 
 .lego-admin-scope .ph {
@@ -693,9 +697,10 @@
     flex-direction: row;
     border-right: 0;
     border-top: 2px solid var(--adm-ink);
-    padding: 6px 6px calc(6px + env(safe-area-inset-bottom, 0px));
+    padding: 6px 4px calc(6px + env(safe-area-inset-bottom, 0px));
     z-index: 40;
     gap: 2px;
+    justify-content: space-around;
   }
   .lego-admin-scope .brand,
   .lego-admin-scope .sp,
@@ -705,11 +710,17 @@
   .lego-admin-scope .nv {
     flex-direction: column;
     gap: 2px;
-    font-size: 0.7rem;
-    padding: 6px 2px;
+    font-size: 0.65rem;
+    padding: 5px 2px;
     align-items: center;
     justify-content: center;
     text-align: center;
+    flex: 1;
+    min-width: 0;
+  }
+  .lego-admin-scope .nv svg.i {
+    width: 18px;
+    height: 18px;
   }
   .lego-admin-scope .nv.on {
     box-shadow: none;

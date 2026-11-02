@@ -1,6 +1,16 @@
 import React, { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { personalInfo, projects as defaultProjects } from '../data/portfolioData';
-import { fetchSiteProfile, fetchPublishedProjects } from '../services/siteService';
+import {
+  personalInfo,
+  projects as defaultProjects,
+  experiences as defaultExperiences,
+  certifications as defaultCertifications,
+} from '../data/portfolioData';
+import {
+  fetchSiteProfile,
+  fetchPublishedProjects,
+  fetchPublishedExperiences,
+  fetchPublishedCertifications,
+} from '../services/siteService';
 
 const defaultProfile = {
   status: 'STATUS: READY TO BUILD',
@@ -14,6 +24,8 @@ const defaultProfile = {
 const SiteContext = createContext({
   siteProfile: defaultProfile,
   projects: defaultProjects,
+  experiences: defaultExperiences,
+  certifications: defaultCertifications,
   loading: true,
   refreshSiteData: async () => {},
 });
@@ -21,13 +33,17 @@ const SiteContext = createContext({
 export const SiteProvider = ({ children }) => {
   const [siteProfile, setSiteProfile] = useState(defaultProfile);
   const [projects, setProjects] = useState(defaultProjects);
+  const [experiences, setExperiences] = useState(defaultExperiences);
+  const [certifications, setCertifications] = useState(defaultCertifications);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
-      const [profileData, projectsData] = await Promise.all([
+      const [profileData, projectsData, expData, certData] = await Promise.all([
         fetchSiteProfile(),
         fetchPublishedProjects(),
+        fetchPublishedExperiences(),
+        fetchPublishedCertifications(),
       ]);
 
       if (profileData) {
@@ -46,6 +62,18 @@ export const SiteProvider = ({ children }) => {
       } else {
         setProjects(defaultProjects);
       }
+
+      if (expData && expData.length > 0) {
+        setExperiences(expData);
+      } else {
+        setExperiences(defaultExperiences);
+      }
+
+      if (certData && certData.length > 0) {
+        setCertifications(certData);
+      } else {
+        setCertifications(defaultCertifications);
+      }
     } catch (err) {
       console.warn('Error loading dynamic site data:', err);
     } finally {
@@ -62,6 +90,8 @@ export const SiteProvider = ({ children }) => {
       value={{
         siteProfile,
         projects,
+        experiences,
+        certifications,
         loading,
         refreshSiteData: loadData,
       }}

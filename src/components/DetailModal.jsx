@@ -378,11 +378,11 @@ export default function DetailModal({ isOpen, onClose, data, type }) {
               </div>
             )}
 
-            {data.credentialId && (
+            {(data.credential_id || data.credentialId) && (
               <div className="pt-2 border-t border-surface-container flex items-center gap-2 text-xs font-label-caps text-on-surface-variant font-bold">
                 <span>CREDENTIAL ID:</span>
                 <span className="font-mono text-on-surface bg-surface-container px-2 py-0.5 border border-on-surface">
-                  {data.credentialId}
+                  {data.credential_id || data.credentialId}
                 </span>
               </div>
             )}

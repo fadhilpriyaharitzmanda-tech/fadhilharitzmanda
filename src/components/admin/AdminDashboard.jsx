@@ -13,8 +13,28 @@ import {
   deleteAdminGuestbookMessage,
   fetchRatingsSummary,
   importDefaultProjectsToSupabase,
+  fetchAllExperiencesAdmin,
+  createExperience,
+  updateExperience,
+  deleteExperience,
+  toggleExperiencePublished,
+  uploadExperienceImages,
+  formatExperiencePeriod,
+  importDefaultExperiencesToSupabase,
+  fetchAllCertificationsAdmin,
+  createCertification,
+  updateCertification,
+  deleteCertification,
+  toggleCertificationPublished,
+  uploadCertificationImages,
+  formatCertificationDate,
+  importDefaultCertificationsToSupabase,
 } from '../../services/siteService';
-import { projects as defaultProjects } from '../../data/portfolioData';
+import {
+  projects as defaultProjects,
+  experiences as defaultExperiencesData,
+  certifications as defaultCertificationsData,
+} from '../../data/portfolioData';
 import { useSiteData } from '../../context/SiteContext';
 import './AdminDashboard.css';
 
@@ -46,6 +66,18 @@ const Icon = ({ name }) => {
         <path d="M7 9V6h3v3M14 9V6h3v3" />
       </>
     ),
+    exp: (
+      <>
+        <rect x="3" y="7" width="18" height="13" rx="2" />
+        <path d="M9 7V4h6v3M3 13h18" />
+      </>
+    ),
+    cert: (
+      <>
+        <circle cx="12" cy="9" r="6" />
+        <path d="M8.5 14L7 22l5-3 5 3-1.5-8" />
+      </>
+    ),
     chat: <path d="M4 5h16v11H9l-5 4z" />,
     edit: <path d="M4 20h4L19 9l-4-4L4 16z" />,
     del: (
@@ -75,7 +107,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
   const { refreshSiteData } = useSiteData();
 
   // Active view
-  const [view, setView] = useState('home'); // 'home' | 'profile' | 'projects' | 'guest'
+  const [view, setView] = useState('home'); // 'home' | 'profile' | 'projects' | 'exp' | 'cert' | 'guest'
 
   // Data states
   const [profileForm, setProfileForm] = useState({
@@ -91,6 +123,12 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
 
   const [projectsList, setProjectsList] = useState([]);
   const [projectsLoading, setProjectsLoading] = useState(false);
+
+  const [experiencesList, setExperiencesList] = useState([]);
+  const [experiencesLoading, setExperiencesLoading] = useState(false);
+
+  const [certificationsList, setCertificationsList] = useState([]);
+  const [certificationsLoading, setCertificationsLoading] = useState(false);
 
   const [guestMessages, setGuestMessages] = useState([]);
   const [ratingsInfo, setRatingsInfo] = useState({ average: '0.0', count: 0, ratings: [] });
@@ -150,17 +188,97 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     }
   };
 
+  // Experience Modal State
+  const [expModalOpen, setExpModalOpen] = useState(false);
+  const [editingExp, setEditingExp] = useState(null);
+  const [expForm, setExpForm] = useState({
+    id: '',
+    period: new Date().toISOString().slice(0, 7), // YYYY-MM
+    title: '',
+    organization: '',
+    location: '',
+    description: '',
+    highlightsText: '',
+    tech: '',
+    images: [],
+    published: true,
+  });
+  const [deletedExpImages, setDeletedExpImages] = useState([]);
+  const [expUploading, setExpUploading] = useState(false);
+  const [expModalError, setExpModalError] = useState('');
+  const [importingExp, setImportingExp] = useState(false);
+
+  const handleImportDefaultExps = async () => {
+    setImportingExp(true);
+    try {
+      const res = await importDefaultExperiencesToSupabase();
+      await loadAdminData();
+      await refreshSiteData();
+      showToast(
+        res.count > 0
+          ? `${res.count} experience bawaan berhasil dipulihkan!`
+          : 'Semua experience bawaan sudah ada di database.'
+      );
+    } catch (err) {
+      console.error('Import experiences error:', err);
+      showToast(err.message || 'Gagal memulihkan experience.');
+    } finally {
+      setImportingExp(false);
+    }
+  };
+
+  // Certification Modal State
+  const [certModalOpen, setCertModalOpen] = useState(false);
+  const [editingCert, setEditingCert] = useState(null);
+  const [certForm, setCertForm] = useState({
+    id: '',
+    issued_on: new Date().toISOString().slice(0, 10), // YYYY-MM-DD
+    title: '',
+    issuer: '',
+    description: '',
+    credential_id: '',
+    images: [],
+    published: true,
+  });
+  const [deletedCertImages, setDeletedCertImages] = useState([]);
+  const [certUploading, setCertUploading] = useState(false);
+  const [certModalError, setCertModalError] = useState('');
+  const [importingCert, setImportingCert] = useState(false);
+
+  const handleImportDefaultCerts = async () => {
+    setImportingCert(true);
+    try {
+      const res = await importDefaultCertificationsToSupabase();
+      await loadAdminData();
+      await refreshSiteData();
+      showToast(
+        res.count > 0
+          ? `${res.count} sertifikasi bawaan berhasil dipulihkan!`
+          : 'Semua sertifikasi bawaan sudah ada di database.'
+      );
+    } catch (err) {
+      console.error('Import certifications error:', err);
+      showToast(err.message || 'Gagal memulihkan sertifikasi.');
+    } finally {
+      setImportingCert(false);
+    }
+  };
+
   // Fetch all admin data (only runs when AdminGate grants status === 'ok')
   const loadAdminData = async () => {
     try {
       setProjectsLoading(true);
+      setExperiencesLoading(true);
+      setCertificationsLoading(true);
       setGuestLoading(true);
 
-      const [profData, projsData, msgsData, ratingData] = await Promise.all([
+      const [profData, projsData, msgsData, ratingData, expsData, certsData] = await Promise.all([
         fetchSiteProfile(),
         fetchAllProjectsAdmin(),
         fetchAdminGuestbook(),
         fetchRatingsSummary(),
+        fetchAllExperiencesAdmin(),
+        fetchAllCertificationsAdmin(),
       ]);
 
       if (profData) {
@@ -187,7 +305,35 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
         }
       }
 
+      let currentExps = expsData || [];
+      // If database has 0 experiences, auto-import defaults
+      if (currentExps.length === 0) {
+        try {
+          const importExpRes = await importDefaultExperiencesToSupabase();
+          if (importExpRes && importExpRes.count > 0) {
+            currentExps = await fetchAllExperiencesAdmin();
+          }
+        } catch (importExpErr) {
+          console.warn('Auto-import default experiences to database:', importExpErr);
+        }
+      }
+
+      let currentCerts = certsData || [];
+      // If database has 0 certifications, auto-import defaults
+      if (currentCerts.length === 0) {
+        try {
+          const importCertRes = await importDefaultCertificationsToSupabase();
+          if (importCertRes && importCertRes.count > 0) {
+            currentCerts = await fetchAllCertificationsAdmin();
+          }
+        } catch (importCertErr) {
+          console.warn('Auto-import default certifications to database:', importCertErr);
+        }
+      }
+
       setProjectsList(currentProjs);
+      setExperiencesList(currentExps);
+      setCertificationsList(currentCerts);
       setGuestMessages(msgsData || []);
       setRatingsInfo(ratingData || { average: '0.0', count: 0, ratings: [] });
     } catch (err) {
@@ -195,6 +341,8 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
       showToast('Gagal memuat data dari database.');
     } finally {
       setProjectsLoading(false);
+      setExperiencesLoading(false);
+      setCertificationsLoading(false);
       setGuestLoading(false);
     }
   };
@@ -496,6 +644,420 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     }
   };
 
+  // ================= EXPERIENCE HANDLERS =================
+  const handleTogglePublishExp = async (exp) => {
+    try {
+      const updated = await toggleExperiencePublished(exp.id, exp.published);
+      setExperiencesList((prev) =>
+        prev.map((item) => (item.id === exp.id ? { ...item, published: updated.published } : item))
+      );
+      await refreshSiteData();
+      showToast(updated.published ? 'Experience ditampilkan di website' : 'Experience disembunyikan (Draft)');
+    } catch (err) {
+      console.error('Toggle publish experience error:', err);
+      showToast('Gagal mengubah status publikasi.');
+    }
+  };
+
+  const handleDeleteExp = async (exp) => {
+    if (!window.confirm(`Hapus experience "${exp.title}"?`)) return;
+
+    try {
+      await deleteExperience(exp.id, exp.images);
+      setExperiencesList((prev) => prev.filter((item) => item.id !== exp.id));
+      await refreshSiteData();
+      showToast('Experience berhasil dihapus!');
+    } catch (err) {
+      console.error('Delete experience error:', err);
+      showToast(err.message || 'Gagal menghapus experience.');
+    }
+  };
+
+  const openNewExpModal = () => {
+    setEditingExp(null);
+    setDeletedExpImages([]);
+    const now = new Date();
+    const curYearMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}`;
+    setExpForm({
+      id: crypto.randomUUID(),
+      period: curYearMonth,
+      title: '',
+      organization: '',
+      location: '',
+      description: '',
+      highlightsText: '',
+      tech: '',
+      images: [],
+      published: true,
+    });
+    setExpModalError('');
+    setExpModalOpen(true);
+  };
+
+  const openEditExpModal = (exp) => {
+    setEditingExp(exp);
+    setDeletedExpImages([]);
+
+    let rawPeriod = '';
+    if (exp.period) {
+      rawPeriod = String(exp.period).slice(0, 7); // YYYY-MM
+    }
+
+    const hl = Array.isArray(exp.highlights)
+      ? exp.highlights.join('\n')
+      : '';
+
+    setExpForm({
+      id: exp.id,
+      period: rawPeriod,
+      title: exp.title || '',
+      organization: exp.organization || '',
+      location: exp.location || '',
+      description: exp.description || '',
+      highlightsText: hl,
+      tech: exp.tech || '',
+      images: Array.isArray(exp.images) ? [...exp.images] : [],
+      published: exp.published !== undefined ? Boolean(exp.published) : true,
+    });
+    setExpModalError('');
+    setExpModalOpen(true);
+  };
+
+  const handleImageFilesChangeExp = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setExpModalError('');
+
+    const currentCount = expForm.images.length;
+    if (currentCount >= 6) {
+      setExpModalError('Maksimal 6 gambar per experience.');
+      e.target.value = '';
+      return;
+    }
+
+    if (currentCount + files.length > 6) {
+      setExpModalError(`Maksimal 6 gambar. Saat ini sudah ada ${currentCount} gambar (hanya dapat menambah ${6 - currentCount} lagi).`);
+      e.target.value = '';
+      return;
+    }
+
+    setExpUploading(true);
+    try {
+      const expId = expForm.id || crypto.randomUUID();
+      if (!expForm.id) {
+        setExpForm((prev) => ({ ...prev, id: expId }));
+      }
+
+      const { urls, errors } = await uploadExperienceImages(files, expId);
+
+      if (errors.length > 0) {
+        setExpModalError(errors.join(' | '));
+      }
+
+      if (urls.length > 0) {
+        setExpForm((prev) => ({
+          ...prev,
+          images: [...prev.images, ...urls].slice(0, 6),
+        }));
+      }
+    } catch (err) {
+      console.error('Upload experience images error:', err);
+      setExpModalError(err.message || 'Gagal mengunggah gambar.');
+    } finally {
+      setExpUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleSetCoverExp = (index) => {
+    if (index <= 0 || index >= expForm.images.length) return;
+    setExpForm((prev) => {
+      const copy = [...prev.images];
+      const [moved] = copy.splice(index, 1);
+      copy.unshift(moved);
+      return { ...prev, images: copy };
+    });
+  };
+
+  const handleDeleteImageFromExp = (index) => {
+    setExpForm((prev) => {
+      const targetUrl = prev.images[index];
+      if (targetUrl) {
+        setDeletedExpImages((d) => [...d, targetUrl]);
+      }
+      const copy = prev.images.filter((_, idx) => idx !== index);
+      return { ...prev, images: copy };
+    });
+  };
+
+  const handleSaveExpModal = async (e) => {
+    e.preventDefault();
+    setExpModalError('');
+
+    const title = expForm.title.trim();
+    if (!title) {
+      setExpModalError('Judul experience wajib diisi.');
+      return;
+    }
+
+    if (!expForm.period) {
+      setExpModalError('Bulan dan tahun periode wajib diisi.');
+      return;
+    }
+
+    const hl = expForm.highlightsText
+      .split('\n')
+      .map((s) => s.trim())
+      .filter(Boolean);
+
+    if (hl.length > 10) {
+      setExpModalError('Maksimal 10 key highlights.');
+      return;
+    }
+
+    setExpUploading(true);
+    try {
+      // Normalize period to YYYY-MM-01
+      const normalizedPeriod = expForm.period.length === 7 ? `${expForm.period}-01` : expForm.period;
+
+      const payload = {
+        id: expForm.id,
+        period: normalizedPeriod,
+        title,
+        organization: expForm.organization.trim(),
+        location: expForm.location.trim(),
+        description: expForm.description.trim(),
+        highlights: hl,
+        tech: expForm.tech.trim(),
+        images: expForm.images,
+        published: Boolean(expForm.published),
+      };
+
+      if (editingExp) {
+        const updated = await updateExperience(
+          editingExp.id,
+          payload,
+          deletedExpImages
+        );
+        setExperiencesList((prev) =>
+          prev
+            .map((item) => (item.id === editingExp.id ? updated : item))
+            .sort((a, b) => (b.period || '').localeCompare(a.period || ''))
+        );
+        showToast('Experience berhasil diperbarui!');
+      } else {
+        const created = await createExperience(payload);
+        setExperiencesList((prev) =>
+          [created, ...prev].sort((a, b) => (b.period || '').localeCompare(a.period || ''))
+        );
+        showToast('Experience baru berhasil ditambahkan!');
+      }
+
+      await refreshSiteData();
+      setExpModalOpen(false);
+    } catch (err) {
+      console.error('Save experience error:', err);
+      setExpModalError(err.message || 'Gagal menyimpan experience.');
+    } finally {
+      setExpUploading(false);
+    }
+  };
+
+  // ================= CERTIFICATION HANDLERS =================
+  const handleTogglePublishCert = async (cert) => {
+    try {
+      const updated = await toggleCertificationPublished(cert.id, cert.published);
+      setCertificationsList((prev) =>
+        prev.map((item) => (item.id === cert.id ? { ...item, published: updated.published } : item))
+      );
+      await refreshSiteData();
+      showToast(updated.published ? 'Sertifikat ditampilkan di website' : 'Sertifikat disembunyikan (Draft)');
+    } catch (err) {
+      console.error('Toggle publish certification error:', err);
+      showToast('Gagal mengubah status publikasi.');
+    }
+  };
+
+  const handleDeleteCert = async (cert) => {
+    if (!window.confirm(`Hapus sertifikat "${cert.title}"?`)) return;
+
+    try {
+      await deleteCertification(cert.id, cert.images);
+      setCertificationsList((prev) => prev.filter((item) => item.id !== cert.id));
+      await refreshSiteData();
+      showToast('Sertifikat berhasil dihapus!');
+    } catch (err) {
+      console.error('Delete certification error:', err);
+      showToast(err.message || 'Gagal menghapus sertifikat.');
+    }
+  };
+
+  const openNewCertModal = () => {
+    setEditingCert(null);
+    setDeletedCertImages([]);
+    const today = new Date().toISOString().slice(0, 10);
+    setCertForm({
+      id: crypto.randomUUID(),
+      issued_on: today,
+      title: '',
+      issuer: '',
+      description: '',
+      credential_id: '',
+      images: [],
+      published: true,
+    });
+    setCertModalError('');
+    setCertModalOpen(true);
+  };
+
+  const openEditCertModal = (cert) => {
+    setEditingCert(cert);
+    setDeletedCertImages([]);
+
+    let rawDate = '';
+    if (cert.issued_on) {
+      rawDate = String(cert.issued_on).slice(0, 10); // YYYY-MM-DD
+    }
+
+    setCertForm({
+      id: cert.id,
+      issued_on: rawDate,
+      title: cert.title || '',
+      issuer: cert.issuer || '',
+      description: cert.description || '',
+      credential_id: cert.credential_id || '',
+      images: Array.isArray(cert.images) ? [...cert.images] : [],
+      published: cert.published !== undefined ? Boolean(cert.published) : true,
+    });
+    setCertModalError('');
+    setCertModalOpen(true);
+  };
+
+  const handleImageFilesChangeCert = async (e) => {
+    const files = Array.from(e.target.files || []);
+    if (files.length === 0) return;
+    setCertModalError('');
+
+    const currentCount = certForm.images.length;
+    if (currentCount >= 6) {
+      setCertModalError('Maksimal 6 gambar per sertifikat.');
+      e.target.value = '';
+      return;
+    }
+
+    if (currentCount + files.length > 6) {
+      setCertModalError(`Maksimal 6 gambar. Saat ini sudah ada ${currentCount} gambar (hanya dapat menambah ${6 - currentCount} lagi).`);
+      e.target.value = '';
+      return;
+    }
+
+    setCertUploading(true);
+    try {
+      const certId = certForm.id || crypto.randomUUID();
+      if (!certForm.id) {
+        setCertForm((prev) => ({ ...prev, id: certId }));
+      }
+
+      const { urls, errors } = await uploadCertificationImages(files, certId);
+
+      if (errors.length > 0) {
+        setCertModalError(errors.join(' | '));
+      }
+
+      if (urls.length > 0) {
+        setCertForm((prev) => ({
+          ...prev,
+          images: [...prev.images, ...urls].slice(0, 6),
+        }));
+      }
+    } catch (err) {
+      console.error('Upload certification images error:', err);
+      setCertModalError(err.message || 'Gagal mengunggah gambar.');
+    } finally {
+      setCertUploading(false);
+      e.target.value = '';
+    }
+  };
+
+  const handleSetCoverCert = (index) => {
+    if (index <= 0 || index >= certForm.images.length) return;
+    setCertForm((prev) => {
+      const copy = [...prev.images];
+      const [moved] = copy.splice(index, 1);
+      copy.unshift(moved);
+      return { ...prev, images: copy };
+    });
+  };
+
+  const handleDeleteImageFromCert = (index) => {
+    setCertForm((prev) => {
+      const targetUrl = prev.images[index];
+      if (targetUrl) {
+        setDeletedCertImages((d) => [...d, targetUrl]);
+      }
+      const copy = prev.images.filter((_, idx) => idx !== index);
+      return { ...prev, images: copy };
+    });
+  };
+
+  const handleSaveCertModal = async (e) => {
+    e.preventDefault();
+    setCertModalError('');
+
+    const title = certForm.title.trim();
+    if (!title) {
+      setCertModalError('Judul sertifikat wajib diisi.');
+      return;
+    }
+
+    if (!certForm.issued_on) {
+      setCertModalError('Tanggal terbit wajib diisi.');
+      return;
+    }
+
+    setCertUploading(true);
+    try {
+      const payload = {
+        id: certForm.id,
+        issued_on: certForm.issued_on,
+        title,
+        issuer: certForm.issuer.trim(),
+        description: certForm.description.trim(),
+        credential_id: certForm.credential_id.trim(),
+        images: certForm.images,
+        published: Boolean(certForm.published),
+      };
+
+      if (editingCert) {
+        const updated = await updateCertification(
+          editingCert.id,
+          payload,
+          deletedCertImages
+        );
+        setCertificationsList((prev) =>
+          prev
+            .map((item) => (item.id === editingCert.id ? updated : item))
+            .sort((a, b) => (b.issued_on || '').localeCompare(a.issued_on || ''))
+        );
+        showToast('Sertifikat berhasil diperbarui!');
+      } else {
+        const created = await createCertification(payload);
+        setCertificationsList((prev) =>
+          [created, ...prev].sort((a, b) => (b.issued_on || '').localeCompare(a.issued_on || ''))
+        );
+        showToast('Sertifikat baru berhasil ditambahkan!');
+      }
+
+      await refreshSiteData();
+      setCertModalOpen(false);
+    } catch (err) {
+      console.error('Save certification error:', err);
+      setCertModalError(err.message || 'Gagal menyimpan sertifikat.');
+    } finally {
+      setCertUploading(false);
+    }
+  };
+
   // Guestbook Delete Message
   const handleDeleteGuestMessage = async (msg) => {
     if (!window.confirm(`Hapus pesan dari "${msg.name}"?`)) return;
@@ -572,6 +1134,26 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
           </button>
           <button
             type="button"
+            className={`nv ${view === 'exp' ? 'on' : ''}`}
+            onClick={() => {
+              setView('exp');
+              window.scrollTo(0, 0);
+            }}
+          >
+            <Icon name="exp" /> Experience
+          </button>
+          <button
+            type="button"
+            className={`nv ${view === 'cert' ? 'on' : ''}`}
+            onClick={() => {
+              setView('cert');
+              window.scrollTo(0, 0);
+            }}
+          >
+            <Icon name="cert" /> Sertifikasi
+          </button>
+          <button
+            type="button"
             className={`nv ${view === 'guest' ? 'on' : ''}`}
             onClick={() => {
               setView('guest');
@@ -611,12 +1193,16 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 {view === 'home' && 'Ringkasan'}
                 {view === 'profile' && 'Profil'}
                 {view === 'projects' && 'Project'}
+                {view === 'exp' && 'Experience'}
+                {view === 'cert' && 'Sertifikasi'}
                 {view === 'guest' && 'Guestbook'}
               </h1>
               <p className="sub">
                 {view === 'home' && 'Kelola isi websitemu tanpa menyentuh kode.'}
                 {view === 'profile' && 'Teks yang tampil di bagian hero dan About.'}
                 {view === 'projects' && 'Tambah, ubah, atau sembunyikan project.'}
+                {view === 'exp' && 'Pengalaman, prestasi, dan kegiatan.'}
+                {view === 'cert' && 'Sertifikat dan penghargaan yang kamu miliki.'}
                 {view === 'guest' && 'Pantau pesan dan hapus yang tidak pantas.'}
               </p>
             </div>
@@ -634,6 +1220,44 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 </button>
                 <button type="button" className="btn" onClick={openNewProjectModal}>
                   <Icon name="plus" /> Tambah project
+                </button>
+              </div>
+            )}
+
+            {view === 'exp' && (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {experiencesList.length === 0 && (
+                  <button
+                    type="button"
+                    className="btn w"
+                    onClick={handleImportDefaultExps}
+                    disabled={importingExp}
+                    title="Pulihkan experience bawaan ke database"
+                  >
+                    {importingExp ? 'Memulihkan...' : 'Pulihkan Bawaan'}
+                  </button>
+                )}
+                <button type="button" className="btn" onClick={openNewExpModal}>
+                  <Icon name="plus" /> Tambah experience
+                </button>
+              </div>
+            )}
+
+            {view === 'cert' && (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                {certificationsList.length === 0 && (
+                  <button
+                    type="button"
+                    className="btn w"
+                    onClick={handleImportDefaultCerts}
+                    disabled={importingCert}
+                    title="Pulihkan sertifikasi bawaan ke database"
+                  >
+                    {importingCert ? 'Memulihkan...' : 'Pulihkan Bawaan'}
+                  </button>
+                )}
+                <button type="button" className="btn" onClick={openNewCertModal}>
+                  <Icon name="plus" /> Tambah sertifikat
                 </button>
               </div>
             )}
@@ -661,7 +1285,15 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 </div>
                 <div className="stat" style={{ '--c': '#1a9e4a' }}>
                   <b>{publishedCount}</b>
-                  <span>Tampil di website</span>
+                  <span>Project tampil</span>
+                </div>
+                <div className="stat" style={{ '--c': '#1f4fb4' }}>
+                  <b>{experiencesList.length}</b>
+                  <span>Experience</span>
+                </div>
+                <div className="stat" style={{ '--c': '#ffd500' }}>
+                  <b>{certificationsList.length}</b>
+                  <span>Sertifikasi</span>
                 </div>
                 <div className="stat" style={{ '--c': '#1f4fb4' }}>
                   <b>{guestMessages.length}</b>
@@ -945,6 +1577,180 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                           onClick={() => handleDeleteProject(p)}
                           aria-label={`Hapus ${p.title}`}
                           title="Hapus Project"
+                        >
+                          <Icon name="del" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* VIEW: EXPERIENCE */}
+          {view === 'exp' && (
+            <div className="card">
+              {experiencesLoading ? (
+                <p className="empty">Memuat daftar experience...</p>
+              ) : experiencesList.length === 0 ? (
+                <p className="empty">
+                  Belum ada data experience. Klik tombol "+ Tambah experience" di atas untuk membuat yang pertama.
+                </p>
+              ) : (
+                experiencesList.map((x, idx) => {
+                  const coverImg = x.images && x.images.length > 0 ? x.images[0] : null;
+                  return (
+                    <div className="row" key={x.id}>
+                      <span
+                        className="th"
+                        style={{
+                          background: COLORS[idx % COLORS.length],
+                          padding: 0,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {coverImg ? (
+                          <img
+                            src={coverImg}
+                            alt={x.title}
+                            loading="lazy"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          (x.title || '?')[0].toUpperCase()
+                        )}
+                      </span>
+                      <div className="tx">
+                        <b>
+                          {x.title}
+                          {!x.published && <span className="tg">DRAFT</span>}
+                        </b>
+                        <p>
+                          {formatExperiencePeriod(x.period)} · {x.organization || 'Tanpa Penyelenggara'}
+                        </p>
+                        <div className="chips">{renderChips(x.tech)}</div>
+                      </div>
+
+                      {/* Toggle Switch */}
+                      <button
+                        type="button"
+                        className="sw"
+                        role="switch"
+                        aria-checked={x.published}
+                        onClick={() => handleTogglePublishExp(x)}
+                        title={x.published ? 'Klik untuk sembunyikan' : 'Klik untuk tampilkan'}
+                      >
+                        <i />
+                        {x.published ? 'Tampil' : 'Draft'}
+                      </button>
+
+                      {/* Actions */}
+                      <div className="acts">
+                        <button
+                          type="button"
+                          className="ib"
+                          onClick={() => openEditExpModal(x)}
+                          aria-label={`Edit ${x.title}`}
+                          title="Edit Experience"
+                        >
+                          <Icon name="edit" />
+                        </button>
+                        <button
+                          type="button"
+                          className="ib d"
+                          onClick={() => handleDeleteExp(x)}
+                          aria-label={`Hapus ${x.title}`}
+                          title="Hapus Experience"
+                        >
+                          <Icon name="del" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* VIEW: SERTIFIKASI */}
+          {view === 'cert' && (
+            <div className="card">
+              {certificationsLoading ? (
+                <p className="empty">Memuat daftar sertifikasi...</p>
+              ) : certificationsList.length === 0 ? (
+                <p className="empty">
+                  Belum ada data sertifikat. Klik tombol "+ Tambah sertifikat" di atas untuk membuat yang pertama.
+                </p>
+              ) : (
+                certificationsList.map((x, idx) => {
+                  const coverImg = x.images && x.images.length > 0 ? x.images[0] : null;
+                  return (
+                    <div className="row" key={x.id}>
+                      <span
+                        className="th"
+                        style={{
+                          background: COLORS[idx % COLORS.length],
+                          padding: 0,
+                          overflow: 'hidden',
+                        }}
+                      >
+                        {coverImg ? (
+                          <img
+                            src={coverImg}
+                            alt={x.title}
+                            loading="lazy"
+                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                          />
+                        ) : (
+                          (x.title || '?')[0].toUpperCase()
+                        )}
+                      </span>
+                      <div className="tx">
+                        <b>
+                          {x.title}
+                          {!x.published && <span className="tg">DRAFT</span>}
+                        </b>
+                        <p>
+                          {formatCertificationDate(x.issued_on)} · {x.issuer || 'Tanpa Penerbit'}
+                        </p>
+                        {x.credential_id && (
+                          <div className="chips">
+                            <span>ID: {x.credential_id}</span>
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Toggle Switch */}
+                      <button
+                        type="button"
+                        className="sw"
+                        role="switch"
+                        aria-checked={x.published}
+                        onClick={() => handleTogglePublishCert(x)}
+                        title={x.published ? 'Klik untuk sembunyikan' : 'Klik untuk tampilkan'}
+                      >
+                        <i />
+                        {x.published ? 'Tampil' : 'Draft'}
+                      </button>
+
+                      {/* Actions */}
+                      <div className="acts">
+                        <button
+                          type="button"
+                          className="ib"
+                          onClick={() => openEditCertModal(x)}
+                          aria-label={`Edit ${x.title}`}
+                          title="Edit Sertifikat"
+                        >
+                          <Icon name="edit" />
+                        </button>
+                        <button
+                          type="button"
+                          className="ib d"
+                          onClick={() => handleDeleteCert(x)}
+                          aria-label={`Hapus ${x.title}`}
+                          title="Hapus Sertifikat"
                         >
                           <Icon name="del" />
                         </button>
@@ -1244,6 +2050,397 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                   className="btn w"
                   onClick={() => setModalOpen(false)}
                   disabled={projectUploading}
+                >
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+      {/* Experience Modal Dialog (Add / Edit) - Matching admin-v3.html */}
+      {expModalOpen && (
+        <div className="lego-modal-overlay" onClick={() => !expUploading && setExpModalOpen(false)}>
+          <div
+            className="lego-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h2>{editingExp ? 'Edit experience' : 'Tambah experience'}</h2>
+
+            {!editingExp && defaultExperiencesData.length > 0 && (
+              <div
+                style={{
+                  marginBottom: '16px',
+                  padding: '10px 14px',
+                  background: 'var(--adm-soft)',
+                  border: '2px dashed var(--adm-ink)',
+                  borderRadius: '9px',
+                }}
+              >
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+                  💡 Isi otomatis dari experience bawaan:
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {defaultExperiencesData.map((exp, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="btn w"
+                      style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
+                      onClick={() => {
+                        const rawPeriod = exp.period ? String(exp.period).slice(0, 7) : '2026-02';
+                        const hl = Array.isArray(exp.highlights) ? exp.highlights.join('\n') : '';
+                        const imgs = Array.isArray(exp.images) ? [...exp.images] : [];
+                        setExpForm((prev) => ({
+                          ...prev,
+                          period: rawPeriod,
+                          title: exp.title || '',
+                          organization: exp.organization || '',
+                          location: exp.location || '',
+                          description: exp.description || '',
+                          highlightsText: hl,
+                          tech: exp.tech || '',
+                          images: imgs,
+                          published: true,
+                        }));
+                        showToast(`Form diisi dengan data: ${exp.title}`);
+                      }}
+                      title={`Isi form dengan data ${exp.title}`}
+                    >
+                      {exp.title.split(' - ')[0] || exp.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveExpModal}>
+              <label htmlFor="q0">Bulan dan tahun *</label>
+              <input
+                id="q0"
+                type="month"
+                required
+                value={expForm.period}
+                onChange={(e) => setExpForm({ ...expForm, period: e.target.value })}
+              />
+
+              <label htmlFor="q1">Judul *</label>
+              <input
+                id="q1"
+                maxLength={120}
+                required
+                value={expForm.title}
+                onChange={(e) => setExpForm({ ...expForm, title: e.target.value })}
+                placeholder="Contoh: Juara II - LKS Cyber Security 2026"
+                autoFocus
+              />
+
+              <label htmlFor="q2">Penyelenggara / lembaga</label>
+              <input
+                id="q2"
+                maxLength={120}
+                value={expForm.organization}
+                onChange={(e) => setExpForm({ ...expForm, organization: e.target.value })}
+                placeholder="Contoh: LKS SMK Tingkat Kabupaten"
+              />
+
+              <label htmlFor="q3">Lokasi</label>
+              <input
+                id="q3"
+                maxLength={80}
+                value={expForm.location}
+                onChange={(e) => setExpForm({ ...expForm, location: e.target.value })}
+                placeholder="Contoh: Karanganyar, Jawa Tengah"
+              />
+
+              <label htmlFor="q4">Deskripsi</label>
+              <textarea
+                id="q4"
+                maxLength={700}
+                value={expForm.description}
+                onChange={(e) => setExpForm({ ...expForm, description: e.target.value })}
+                placeholder="Penjelasan tentang pengalaman atau kegiatan ini..."
+              />
+
+              <label htmlFor="q5">Key highlights (satu poin per baris, maksimal 10)</label>
+              <textarea
+                id="q5"
+                rows={5}
+                value={expForm.highlightsText}
+                onChange={(e) => setExpForm({ ...expForm, highlightsText: e.target.value })}
+                placeholder="Poin penting 1&#10;Poin penting 2&#10;Poin penting 3"
+              />
+
+              <label htmlFor="q6">Technologies (pisahkan dengan koma)</label>
+              <input
+                id="q6"
+                value={expForm.tech}
+                onChange={(e) => setExpForm({ ...expForm, tech: e.target.value })}
+                placeholder="Cyber Security, Network Defense, Linux"
+              />
+
+              <label htmlFor="exp-imgs">
+                Gambar ({expForm.images.length}/6)
+              </label>
+              <input
+                id="exp-imgs"
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={expUploading || expForm.images.length >= 6}
+                onChange={handleImageFilesChangeExp}
+              />
+              <p className="note">
+                Maksimal 6 gambar, 2 MB per gambar. Gambar pertama otomatis jadi COVER. Klik ★ untuk mengubah cover.
+              </p>
+
+              {/* Experience Images Grid */}
+              {expForm.images.length > 0 && (
+                <div className="igrid">
+                  {expForm.images.map((src, i) => (
+                    <div className="im" key={src || i}>
+                      <img src={src} alt={`Gambar ${i + 1}`} loading="lazy" />
+                      {i === 0 && <span className="cv">COVER</span>}
+                      <div className="ia">
+                        {i > 0 && (
+                          <button
+                            type="button"
+                            className="ib"
+                            onClick={() => handleSetCoverExp(i)}
+                            title={`Jadikan gambar ${i + 1} sebagai cover`}
+                          >
+                            ★
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="ib d"
+                          onClick={() => handleDeleteImageFromExp(i)}
+                          title={`Hapus gambar ${i + 1}`}
+                        >
+                          <Icon name="del" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <label htmlFor="q8">Status Publikasi</label>
+              <select
+                id="q8"
+                value={expForm.published ? '1' : '0'}
+                onChange={(e) =>
+                  setExpForm({ ...expForm, published: e.target.value === '1' })
+                }
+              >
+                <option value="1">Tampil di website</option>
+                <option value="0">Draft (disembunyikan)</option>
+              </select>
+
+              {expModalError && (
+                <div className="er" role="alert">
+                  {expModalError}
+                </div>
+              )}
+
+              <div className="acts" style={{ marginTop: '22px' }}>
+                <button type="submit" className="btn" disabled={expUploading}>
+                  <Icon name="save" /> {expUploading ? 'Menyimpan...' : 'Simpan'}
+                </button>
+                <button
+                  type="button"
+                  className="btn w"
+                  onClick={() => setExpModalOpen(false)}
+                  disabled={expUploading}
+                >
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Certification Modal Dialog (Add / Edit) - Matching admin-v3.html */}
+      {certModalOpen && (
+        <div className="lego-modal-overlay" onClick={() => !certUploading && setCertModalOpen(false)}>
+          <div
+            className="lego-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h2>{editingCert ? 'Edit sertifikat' : 'Tambah sertifikat'}</h2>
+
+            {!editingCert && defaultCertificationsData.length > 0 && (
+              <div
+                style={{
+                  marginBottom: '16px',
+                  padding: '10px 14px',
+                  background: 'var(--adm-soft)',
+                  border: '2px dashed var(--adm-ink)',
+                  borderRadius: '9px',
+                }}
+              >
+                <span style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
+                  💡 Isi otomatis dari sertifikasi bawaan:
+                </span>
+                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+                  {defaultCertificationsData.map((c, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      className="btn w"
+                      style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
+                      onClick={() => {
+                        const rawDate = c.issued_on || c.date || '2026-02-18';
+                        const imgs = Array.isArray(c.images) ? [...c.images] : [];
+                        setCertForm((prev) => ({
+                          ...prev,
+                          issued_on: String(rawDate).slice(0, 10),
+                          title: c.title || '',
+                          issuer: c.issuer || '',
+                          description: c.description || '',
+                          credential_id: c.credential_id || c.credentialId || '',
+                          images: imgs,
+                          published: true,
+                        }));
+                        showToast(`Form diisi dengan data: ${c.title}`);
+                      }}
+                      title={`Isi form dengan data ${c.title}`}
+                    >
+                      {c.title.split(' - ')[0] || c.title}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <form onSubmit={handleSaveCertModal}>
+              <label htmlFor="c0">Tanggal terbit *</label>
+              <input
+                id="c0"
+                type="date"
+                required
+                value={certForm.issued_on}
+                onChange={(e) => setCertForm({ ...certForm, issued_on: e.target.value })}
+              />
+
+              <label htmlFor="c1">Judul *</label>
+              <input
+                id="c1"
+                maxLength={120}
+                required
+                value={certForm.title}
+                onChange={(e) => setCertForm({ ...certForm, title: e.target.value })}
+                placeholder="Contoh: Sertifikat Juara II LKS Cyber Security 2026"
+                autoFocus
+              />
+
+              <label htmlFor="c2">Penerbit</label>
+              <input
+                id="c2"
+                maxLength={120}
+                value={certForm.issuer}
+                onChange={(e) => setCertForm({ ...certForm, issuer: e.target.value })}
+                placeholder="Contoh: Dinas Pendidikan Wilayah VI Prov. Jawa Tengah"
+              />
+
+              <label htmlFor="c4">Deskripsi</label>
+              <textarea
+                id="c4"
+                maxLength={700}
+                value={certForm.description}
+                onChange={(e) => setCertForm({ ...certForm, description: e.target.value })}
+                placeholder="Penjelasan penghargaan atau kredensial ini..."
+              />
+
+              <label htmlFor="c7">Credential ID</label>
+              <input
+                id="c7"
+                maxLength={80}
+                value={certForm.credential_id}
+                onChange={(e) => setCertForm({ ...certForm, credential_id: e.target.value })}
+                placeholder="Contoh: 400.3.8.6/75/2026"
+              />
+
+              <label htmlFor="cert-imgs">
+                Gambar ({certForm.images.length}/6)
+              </label>
+              <input
+                id="cert-imgs"
+                type="file"
+                accept="image/*"
+                multiple
+                disabled={certUploading || certForm.images.length >= 6}
+                onChange={handleImageFilesChangeCert}
+              />
+              <p className="note">
+                Maksimal 6 gambar, 2 MB per gambar. Gambar pertama otomatis jadi COVER. Klik ★ untuk mengubah cover.
+              </p>
+
+              {/* Certification Images Grid */}
+              {certForm.images.length > 0 && (
+                <div className="igrid">
+                  {certForm.images.map((src, i) => (
+                    <div className="im" key={src || i}>
+                      <img src={src} alt={`Gambar ${i + 1}`} loading="lazy" />
+                      {i === 0 && <span className="cv">COVER</span>}
+                      <div className="ia">
+                        {i > 0 && (
+                          <button
+                            type="button"
+                            className="ib"
+                            onClick={() => handleSetCoverCert(i)}
+                            title={`Jadikan gambar ${i + 1} sebagai cover`}
+                          >
+                            ★
+                          </button>
+                        )}
+                        <button
+                          type="button"
+                          className="ib d"
+                          onClick={() => handleDeleteImageFromCert(i)}
+                          title={`Hapus gambar ${i + 1}`}
+                        >
+                          <Icon name="del" />
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              <label htmlFor="c8">Status Publikasi</label>
+              <select
+                id="c8"
+                value={certForm.published ? '1' : '0'}
+                onChange={(e) =>
+                  setCertForm({ ...certForm, published: e.target.value === '1' })
+                }
+              >
+                <option value="1">Tampil di website</option>
+                <option value="0">Draft (disembunyikan)</option>
+              </select>
+
+              {certModalError && (
+                <div className="er" role="alert">
+                  {certModalError}
+                </div>
+              )}
+
+              <div className="acts" style={{ marginTop: '22px' }}>
+                <button type="submit" className="btn" disabled={certUploading}>
+                  <Icon name="save" /> {certUploading ? 'Menyimpan...' : 'Simpan'}
+                </button>
+                <button
+                  type="button"
+                  className="btn w"
+                  onClick={() => setCertModalOpen(false)}
+                  disabled={certUploading}
                 >
                   Batal
                 </button>

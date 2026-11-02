@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>LEGO Admin Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Pixelify+Sans:wght@500;700&family=Space+Grotesk:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+:root{--red:#b3121a;--yellow:#ffd500;--ink:#141414;--paper:#fff;--blue:#1f4fb4;--green:#1a9e4a;--bg:#fff;--fg:#141414;--muted:#5f5f5f;--soft:#f6f6f4;
+--pix:'Pixelify Sans',ui-monospace,monospace;--body:'Space Grotesk',system-ui,sans-serif;box-sizing:border-box}
+*,*::before,*::after{box-sizing:inherit}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);line-height:1.45;padding-top:env(safe-area-inset-top,0px)}
+svg.i{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.shell{display:grid;grid-template-columns:240px 1fr;min-height:100vh}
+aside{background:var(--paper);color:var(--ink);border-right:2px solid var(--ink);padding:22px 16px;display:flex;flex-direction:column;gap:6px;position:sticky;top:0;height:100vh}
+.brand{display:flex;align-items:center;gap:10px;margin:0 6px 22px;font-family:var(--pix);font-weight:700;font-size:1.15rem;line-height:1.1}
+.brand small{display:block;font-family:var(--body);font-weight:500;font-size:.72rem;color:var(--muted);letter-spacing:.08em}
+.logo{width:36px;height:36px}
+.nv{display:flex;align-items:center;gap:12px;font:500 .95rem var(--body);color:var(--ink);background:none;border:2px solid transparent;border-radius:10px;padding:10px 12px;cursor:pointer;text-align:left;width:100%}
+.nv:hover{background:var(--soft)}
+.nv.on{background:var(--yellow);border-color:var(--ink);box-shadow:2px 2px 0 var(--ink);font-weight:700}
+.sp{flex:1}
+main{padding:32px clamp(18px,4vw,48px) 90px;width:100%;min-width:0}
+.ph{display:flex;justify-content:space-between;align-items:flex-end;gap:16px;flex-wrap:wrap;margin-bottom:26px}
+h1{font-family:var(--pix);font-weight:700;font-size:1.9rem;margin:0;line-height:1.1}
+.sub{margin:4px 0 0;color:var(--muted)}
+.card{background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:20px;margin-bottom:22px}
+.card h2{font-family:var(--pix);font-size:1rem;margin:0 0 12px;display:flex;justify-content:space-between;align-items:center}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:18px;margin-bottom:22px}
+.stat{background:var(--paper);color:var(--ink);border:2px solid var(--ink);border-radius:14px;box-shadow:3px 3px 0 var(--ink);padding:16px 18px 14px;position:relative;margin-top:8px}
+.stat::before{content:"";position:absolute;left:14px;top:-9px;width:46px;height:9px;background:radial-gradient(circle at 50% 100%,var(--c) 0 3.5px,var(--ink) 3.5px 6px,transparent 6.2px) 0 0/23px 9px repeat-x}
+.stat b{font-size:2.1rem;line-height:1.1;display:block;font-weight:700}
+.stat span{font-size:.82rem;color:var(--muted)}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:0 22px}
+.btn{display:inline-flex;align-items:center;gap:8px;font:700 .92rem var(--body);color:#fff;background:var(--red);border:2px solid var(--ink);border-radius:10px;box-shadow:3px 3px 0 var(--ink);padding:9px 16px;cursor:pointer}
+.btn.w{background:#fff;color:var(--ink)}
+.btn:hover{transform:translate(1px,1px);box-shadow:2px 2px 0 var(--ink)}
+.ib{display:grid;place-items:center;width:36px;height:36px;background:#fff;color:var(--ink);border:2px solid var(--ink);border-radius:9px;cursor:pointer}
+.ib:hover{background:var(--yellow)}.ib.d:hover{background:#ffd9db}
+button:focus-visible,input:focus-visible,textarea:focus-visible,select:focus-visible{outline:3px solid var(--blue);outline-offset:2px}
+.row{display:flex;align-items:center;gap:14px;padding:13px 0;border-top:1px solid #dcdcd6}
+.row:first-of-type{border-top:0;padding-top:2px}
+.th{width:40px;height:40px;border:2px solid var(--ink);border-radius:8px;display:grid;place-items:center;color:#fff;font:700 1.1rem var(--pix);flex:none}
+.tx{flex:1;min-width:0}
+.tx b{display:block;font-weight:700}
+.tx p{margin:0;font-size:.85rem;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.tg{display:inline-block;font-size:.7rem;font-weight:700;letter-spacing:.04em;background:var(--ink);color:#fff;border-radius:5px;padding:1px 6px;margin-left:6px;vertical-align:middle}
+.chips{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
+.chips span{font-size:.75rem;background:var(--soft);border:1.5px solid #cfcfc8;border-radius:6px;padding:0 8px}
+.sw{display:flex;align-items:center;gap:8px;font-size:.8rem;color:var(--muted);background:none;border:0;cursor:pointer;padding:0;min-width:92px}
+.sw i{width:42px;height:24px;border:2px solid var(--ink);border-radius:12px;background:#d8d8d2;position:relative;transition:background .15s;flex:none}
+.sw i::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--ink);transition:transform .15s}
+.sw[aria-checked=true] i{background:var(--green)}.sw[aria-checked=true] i::after{transform:translateX(18px);background:#fff}
+.acts{display:flex;gap:8px;align-items:center}
+label{display:block;font-weight:700;font-size:.82rem;margin:16px 0 6px}
+label:first-child{margin-top:0}
+input,textarea,select{width:100%;font:inherit;color:var(--ink);background:#fff;border:2px solid var(--ink);border-radius:9px;padding:9px 12px}
+textarea{min-height:96px;resize:vertical}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:0 16px}
+.form{display:grid;grid-template-columns:1.25fr 1fr;gap:22px;align-items:start}
+.pvbox{position:sticky;top:20px}
+.pv{display:inline-flex;align-items:center;gap:8px;background:var(--yellow);border:2px solid var(--ink);border-radius:8px;box-shadow:2px 2px 0 var(--ink);padding:3px 12px;font:700 .8rem var(--pix)}
+.pvn{font-weight:700;font-size:1.8rem;letter-spacing:-.04em;line-height:1;margin:14px 0 10px}.pvn span{color:var(--red);display:block}
+.pvbox p{margin:0;font-size:.9rem}
+.av{width:36px;height:36px;border:2px solid var(--ink);border-radius:8px;display:grid;place-items:center;color:#fff;font:700 1rem var(--pix);flex:none}
+.avg{display:flex;align-items:baseline;gap:10px;margin-bottom:6px}.avg b{font-size:2.4rem;line-height:1}.avg span{color:var(--muted)}
+.star{color:var(--yellow);-webkit-text-stroke:1.5px var(--ink);font-size:1.4rem;letter-spacing:2px}
+.empty{color:var(--muted);padding:8px 0}
+.lg{min-height:100vh;display:grid;place-items:center;padding:24px}.lg .card{max-width:400px;text-align:center;padding:30px}
+.lg .logo{width:56px;height:56px;margin-bottom:8px}
+dialog{border:2px solid var(--ink);border-radius:16px;box-shadow:5px 5px 0 var(--ink);padding:24px;max-width:560px;width:calc(100% - 28px);background:var(--paper);color:var(--ink)}
+dialog::backdrop{background:#0007}
+dialog h2{font-family:var(--pix);margin:0 0 16px;font-size:1.3rem}
+dialog{max-height:92vh;overflow:auto}
+.igrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;margin-top:10px}
+.im{position:relative;border:2px solid var(--ink);border-radius:8px;overflow:hidden;aspect-ratio:4/3;background:var(--soft)}
+.im img{width:100%;height:100%;object-fit:cover;display:block}
+.cv{position:absolute;left:4px;top:4px;background:var(--yellow);border:2px solid var(--ink);border-radius:5px;font:700 .65rem var(--body);padding:0 5px}
+.ia{position:absolute;right:4px;bottom:4px;display:flex;gap:4px}
+.ia .ib{width:28px;height:28px;border-radius:7px;font-size:.9rem}.ia .ib svg{width:15px;height:15px}
+.er{color:var(--red);font-weight:700;min-height:1.3em;margin-top:10px}
+.note{font-size:.78rem;color:var(--muted);margin:6px 0 0}
+.toast{position:fixed;left:50%;bottom:92px;transform:translateX(-50%);background:var(--ink);color:#fff;font-weight:700;font-size:.9rem;padding:10px 18px;border-radius:10px;border:2px solid var(--yellow);opacity:0;pointer-events:none;transition:opacity .2s;z-index:60}
+.toast.on{opacity:1}
+@media (max-width:820px){
+ .shell{display:block}
+ aside{position:fixed;top:auto;bottom:0;left:0;right:0;height:auto;flex-direction:row;border-right:0;border-top:2px solid var(--ink);padding:6px 6px calc(6px + env(safe-area-inset-bottom,0px));z-index:40;gap:2px}
+ .brand,.sp,.lo{display:none}
+ .nv{flex-direction:column;gap:2px;font-size:.7rem;padding:6px 2px;align-items:center;justify-content:center;text-align:center}.nv.on{box-shadow:none}
+ .two,.form,.g2{display:block}.pvbox{position:static}
+ .row{flex-wrap:wrap}.sw{min-width:0}
+ .tx p{white-space:normal}
+}
+@media (prefers-reduced-motion:reduce){*{transition:none!important}}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<dialog id="dlg" aria-labelledby="dt"></dialog>
+<script>
+const $=(s,e=document)=>e.querySelector(s);
+const esc=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const COL=['#b3121a','#1f4fb4','#1a9e4a','#c77a00'];
+const P={home:'<path d="M3 11l9-8 9 8M5 10v10h14V10"/>',user:'<circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/>',proj:'<rect x="3" y="9" width="18" height="11" rx="2"/><path d="M7 9V6h3v3M14 9V6h3v3"/>',chat:'<path d="M4 5h16v11H9l-5 4z"/>',edit:'<path d="M4 20h4L19 9l-4-4L4 16z"/>',del:'<path d="M5 7h14M9 7V4h6v3M7 7l1 13h8l1-13"/>',plus:'<path d="M12 5v14M5 12h14"/>',out:'<path d="M10 4H5v16h5M15 8l4 4-4 4M19 12H9"/>',save:'<path d="M5 4h12l2 2v14H5zM8 4v5h7V4M8 20v-6h8v6"/>'};
+const ic=n=>'<svg class="i" viewBox="0 0 24 24" aria-hidden="true">'+P[n]+'</svg>';
+const LOGO='<svg class="logo" viewBox="0 0 64 64" aria-hidden="true"><rect x="9" y="21" width="48" height="38" rx="4" fill="#141414"/><rect x="11" y="7" width="14" height="10" rx="2.5" fill="#b3121a" stroke="#141414" stroke-width="3.5"/><rect x="31" y="7" width="14" height="10" rx="2.5" fill="#b3121a" stroke="#141414" stroke-width="3.5"/><rect x="4" y="16" width="48" height="38" rx="4" fill="#b3121a" stroke="#141414" stroke-width="4"/><path fill="#ffd500" d="M19 24h20v6H25v3h9v5h-9v9h-6z"/></svg>';
+let S={user:false,view:'home',pid:10,
+ profile:{status:'STATUS: READY TO BUILD',first:'FADHIL PRIYA',last:'HARITZMANDA',bio:'Saya Fadhil, seorang pelajar yang sedang menempuh pendidikan di bidang Rekayasa Perangkat Lunak. Saya tertarik pada perkembangan teknologi informasi.',tags:'Pelajar RPL, Young Developer, Software Enthusiast, Creative Problem Solver',cv:'https://contoh.com/cv.pdf'},
+ projects:[
+  {id:1,t:'Portofolio LEGO',d:'Website portofolio pribadi bertema LEGO dengan guestbook dan widget cuaca.',tech:'Vite, CSS, Supabase',demo:'https://contoh.com',repo:'https://github.com/contoh/portofolio',pub:true},
+  {id:2,t:'Aplikasi Cuaca',d:'Menampilkan cuaca dan waktu real-time memakai API.',tech:'JavaScript, Open-Meteo',demo:'',repo:'',pub:true},
+  {id:3,t:'Sistem Perpustakaan',d:'Tugas sekolah: pencatatan peminjaman buku.',tech:'PHP, MySQL',demo:'',repo:'',pub:false}],
+ msgs:[{id:1,n:'Rina Putri',p:'google',m:'Portofolionya rapi banget!'},{id:2,n:'dimas-dev',p:'github',m:'Animasi karakternya lucu.'},{id:3,n:'Salsa A.',p:'google',m:'Suka widget cuacanya.'}],
+ ratings:[5,4,5]};
+const T={home:['Ringkasan','Kelola isi websitemu tanpa menyentuh kode.'],profile:['Profil','Teks yang tampil di bagian hero dan About.'],projects:['Project','Tambah, ubah, atau sembunyikan project.'],guest:['Guestbook','Pantau pesan dan hapus yang tidak pantas.']};
+const IC={home:'home',profile:'user',projects:'proj',guest:'chat'};
+const avg=()=>S.ratings.length?(S.ratings.reduce((x,y)=>x+y,0)/S.ratings.length).toFixed(1):'0.0';
+const chips=s=>s.split(',').map(x=>x.trim()).filter(Boolean).map(x=>'<span>'+esc(x)+'</span>').join('');
+const th=(t,i)=>'<span class="th" style="background:'+COL[i%4]+'">'+esc(t[0].toUpperCase())+'</span>';
+function toast(t){const e=$('#toast');e.textContent=t;e.classList.add('on');clearTimeout(toast.t);toast.t=setTimeout(()=>e.classList.remove('on'),1800)}
+function projRow(x,full){
+  return '<div class="row">'+th(x.t,x.id)+'<div class="tx"><b>'+esc(x.t)+(x.pub?'':'<span class="tg">DRAFT</span>')+'</b><p>'+esc(x.d)+'</p>'+(full?'<div class="chips">'+chips(x.tech)+'</div>':'')+'</div>'+(full?'<button class="sw" role="switch" aria-checked="'+x.pub+'" data-a="tog" data-id="'+x.id+'"><i></i>'+(x.pub?'Tampil':'Draft')+'</button><div class="acts"><button class="ib" data-a="edp" data-id="'+x.id+'" aria-label="Edit '+esc(x.t)+'">'+ic('edit')+'</button><button class="ib d" data-a="delp" data-id="'+x.id+'" aria-label="Hapus '+esc(x.t)+'">'+ic('del')+'</button></div>':'')+'</div>';
+}
+function render(){
+  const a=$('#app');
+  if(!S.user){a.innerHTML='<div class="lg"><div class="card">'+LOGO+'<h1 style="font-size:1.6rem">Admin</h1><p class="sub" style="margin-bottom:20px">Halaman ini khusus pemilik website. Masuk dengan akun GitHub yang terdaftar sebagai admin.</p><button class="btn" data-a="login" style="background:#1c1c1c">Masuk dengan GitHub</button><p class="note" style="margin-top:16px">Mode demo: tombol hanya simulasi. Di website asli, hak admin dicek oleh Supabase (RLS).</p></div></div>';return}
+  const v=S.view,act=v==='projects'?'<button class="btn" data-a="newp">'+ic('plus')+'Tambah project</button>':v==='profile'?'<button class="btn" data-a="savepf">'+ic('save')+'Simpan</button>':'';
+  a.innerHTML='<div class="shell"><aside><div class="brand">'+LOGO+'<div>FADHIL<small>ADMIN</small></div></div>'+Object.keys(T).map(k=>'<button class="nv'+(v===k?' on':'')+'" data-a="nav" data-v="'+k+'"'+(v===k?' aria-current="page"':'')+'>'+ic(IC[k])+T[k][0]+'</button>').join('')+'<div class="sp"></div><button class="nv lo" data-a="logout">'+ic('out')+'Keluar</button></aside><main><div class="ph"><div><h1>'+T[v][0]+'</h1><p class="sub">'+T[v][1]+'</p></div>'+act+'</div><div id="ct"></div></main></div>';
+  const c=$('#ct');
+  if(v==='home'){
+    const p=S.projects;
+    c.innerHTML='<div class="stats"><div class="stat" style="--c:#b3121a"><b>'+p.length+'</b><span>Total project</span></div><div class="stat" style="--c:#1a9e4a"><b>'+p.filter(x=>x.pub).length+'</b><span>Tampil di website</span></div><div class="stat" style="--c:#1f4fb4"><b>'+S.msgs.length+'</b><span>Pesan guestbook</span></div><div class="stat" style="--c:#ffd500"><b>'+avg()+'</b><span>Rating rata-rata</span></div></div>'
+    +'<div class="two"><div class="card"><h2>Project terbaru<button class="btn w" data-a="nav" data-v="projects" style="padding:4px 12px">Lihat semua</button></h2>'+(p.slice(0,3).map(x=>projRow(x,false)).join('')||'<p class="empty">Belum ada project.</p>')+'</div><div class="card"><h2>Pesan terbaru<button class="btn w" data-a="nav" data-v="guest" style="padding:4px 12px">Kelola</button></h2>'+(S.msgs.slice(-3).reverse().map(x=>'<div class="row"><span class="av" style="background:'+COL[x.id%4]+'">'+esc(x.n[0].toUpperCase())+'</span><div class="tx"><b>'+esc(x.n)+'</b><p>'+esc(x.m)+'</p></div></div>').join('')||'<p class="empty">Belum ada pesan.</p>')+'</div></div>';
+  }else if(v==='profile'){
+    const f=S.profile;
+    c.innerHTML='<div class="form"><div class="card"><div class="g2"><div><label for="f1">Nama depan</label><input id="f1" value="'+esc(f.first)+'" maxlength="40"></div><div><label for="f2">Nama belakang (merah)</label><input id="f2" value="'+esc(f.last)+'" maxlength="40"></div></div><label for="f3">Teks status</label><input id="f3" value="'+esc(f.status)+'" maxlength="40"><label for="f4">Deskripsi singkat</label><textarea id="f4" maxlength="400">'+esc(f.bio)+'</textarea><label for="f5">Tag (pisahkan dengan koma)</label><input id="f5" value="'+esc(f.tags)+'"><label for="f6">Link CV</label><input id="f6" type="url" value="'+esc(f.cv)+'"><div class="er" id="er" role="alert"></div></div><div class="card pvbox"><h2>Pratinjau</h2><div id="pvw"></div></div></div>';
+    pv();c.querySelectorAll('input,textarea').forEach(i=>i.oninput=pv);
+  }else if(v==='projects'){
+    c.innerHTML='<div class="card">'+(S.projects.map(x=>projRow(x,true)).join('')||'<p class="empty">Belum ada project. Klik "Tambah project" untuk membuat yang pertama.</p>')+'</div>';
+  }else{
+    c.innerHTML='<div class="card"><div class="avg"><b>'+avg()+'</b><span class="star" aria-hidden="true">★</span><span>dari '+S.ratings.length+' pemberi rating</span></div></div><div class="card">'+(S.msgs.map(x=>'<div class="row"><span class="av" style="background:'+COL[x.id%4]+'">'+esc(x.n[0].toUpperCase())+'</span><div class="tx"><b>'+esc(x.n)+'<span class="tg">'+esc(x.p.toUpperCase())+'</span></b><p style="white-space:normal">'+esc(x.m)+'</p></div><button class="ib d" data-a="delm" data-id="'+x.id+'" aria-label="Hapus pesan dari '+esc(x.n)+'">'+ic('del')+'</button></div>').join('')||'<p class="empty">Belum ada pesan.</p>')+'</div>';
+  }
+}
+function pv(){
+  const g=i=>$('#'+i).value;
+  $('#pvw').innerHTML='<span class="pv">'+esc(g('f3'))+'</span><div class="pvn">'+esc(g('f1'))+'<span>'+esc(g('f2'))+'</span></div><p>'+esc(g('f4'))+'</p><div class="chips">'+chips(g('f5'))+'</div>';
+}
+function form(p){
+  const d=$('#dlg');p=p||{t:'',d:'',tech:'',demo:'',repo:'',pub:true};
+  d.innerHTML='<h2 id="dt">'+(p.id?'Edit project':'Project baru')+'</h2><label for="p1">Judul</label><input id="p1" maxlength="60" value="'+esc(p.t)+'"><label for="p2">Deskripsi</label><textarea id="p2" maxlength="300">'+esc(p.d)+'</textarea><label for="p3">Teknologi (pisahkan dengan koma)</label><input id="p3" value="'+esc(p.tech)+'"><div class="g2"><div><label for="p4">Link demo</label><input id="p4" type="url" value="'+esc(p.demo)+'"></div><div><label for="p5">Link repo</label><input id="p5" type="url" value="'+esc(p.repo)+'"></div></div><label for="p6">Gambar</label><input id="p6" type="file" accept="image/*" disabled><p class="note">Di website asli: unggah ke Supabase Storage.</p><label for="p7">Status</label><select id="p7"><option value="1"'+(p.pub?' selected':'')+'>Tampil di website</option><option value="0"'+(p.pub?'':' selected')+'>Draft (disembunyikan)</option></select><div class="er" id="er" role="alert"></div><div class="acts" style="margin-top:8px"><button class="btn" data-a="savepr" data-id="'+(p.id||'')+'">Simpan</button><button class="btn w" data-a="close">Batal</button></div>';
+  d.showModal();$('#p1').focus();
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const a=b.dataset.a,id=+b.dataset.id;
+  if(a==='login'){S.user=true;render()}
+  else if(a==='logout'){S.user=false;render()}
+  else if(a==='nav'){S.view=b.dataset.v;render();scrollTo(0,0)}
+  else if(a==='newp')form();
+  else if(a==='edp')form(S.projects.find(x=>x.id===id));
+  else if(a==='close')$('#dlg').close();
+  else if(a==='tog'){const x=S.projects.find(x=>x.id===id);x.pub=!x.pub;render();toast(x.pub?'Project ditampilkan':'Project disembunyikan')}
+  else if(a==='delp'){const x=S.projects.find(x=>x.id===id);if(confirm('Hapus project "'+x.t+'"?')){S.projects=S.projects.filter(y=>y.id!==id);render();toast('Project dihapus')}}
+  else if(a==='delm'){if(confirm('Hapus pesan ini?')){S.msgs=S.msgs.filter(y=>y.id!==id);render();toast('Pesan dihapus')}}
+  else if(a==='savepf'){
+    const v=i=>$('#'+i).value.trim();
+    if(!v('f1')||!v('f2')){$('#er').textContent='Nama depan dan belakang tidak boleh kosong.';return}
+    S.profile={first:v('f1'),last:v('f2'),status:v('f3'),bio:v('f4'),tags:v('f5'),cv:v('f6')};toast('Profil tersimpan')}
+  else if(a==='savepr'){
+    const v=i=>$('#'+i).value.trim();
+    if(!v('p1')){$('#er').textContent='Judul wajib diisi.';return}
+    const o={t:v('p1'),d:v('p2'),tech:v('p3'),demo:v('p4'),repo:v('p5'),pub:v('p7')==='1'};
+    if(id){Object.assign(S.projects.find(x=>x.id===id),o)}else{S.projects.unshift({id:S.pid++,...o})}
+    $('#dlg').close();S.view='projects';render();toast('Project tersimpan')}
+});
+const CATS=['Web','Mobile','Game','Desktop','Lainnya'];
+let cur=[];
+S.projects.unshift({id:4,y:2026,cat:'Web',t:'Edify - E-Learning & Coding Playground',d:'Platform e-learning fundamental skill digital dengan in-browser code playground dan terminal sandbox interaktif berbasis React.js.',prob:'Banyak pemula yang ingin belajar pemrograman terkendala instalasi compiler/runtime di komputer mereka, dan butuh latihan coding terarah dengan umpan balik instan.',sol:'Web e-learning interaktif berbasis React.js dengan coding playground multi-bahasa, editor kode dengan sintaks highlight, dan konsol terminal real-time.',hl:['Katalog pelatihan fundamental skill digital (Web Development, AI Engineering, UI/UX Design, Data Science)','In-browser interactive coding playground tanpa instalasi lokal','Dukungan multi-bahasa: Python, PHP, JavaScript, Java, C#, dan C++','Editor kode cerdas dengan shortcut eksekusi (Ctrl + Enter) dan indikator engine siap','Terminal console terintegrasi untuk output program secara langsung','Antarmuka modern, interaktif, dan responsif'],tech:'React.js, JavaScript, Tailwind CSS, HTML5/CSS3, Python Playground',repo:'https://github.com/',demo:'',imgs:[],pub:true});
+function projRow(x,full){
+  const tag=x.y?`<span class="tg" style="background:var(--blue)">${x.y} · ${esc((x.cat||'').toUpperCase())}</span>`:'';
+  return `<div class="row">${th(x.t,x.id)}<div class="tx"><b>${esc(x.t)}${tag}${x.pub?'':'<span class="tg">DRAFT</span>'}</b><p>${esc(x.d)}</p>${full?`<div class="chips">${chips(x.tech)}</div>`:''}</div>${full?`<button class="sw" role="switch" aria-checked="${x.pub}" data-a="tog" data-id="${x.id}"><i></i>${x.pub?'Tampil':'Draft'}</button><div class="acts"><button class="ib" data-a="edp" data-id="${x.id}" aria-label="Edit ${esc(x.t)}">${ic('edit')}</button><button class="ib d" data-a="delp" data-id="${x.id}" aria-label="Hapus ${esc(x.t)}">${ic('del')}</button></div>`:''}</div>`;
+}
+function imgGrid(){
+  $('#ig').innerHTML=cur.map((m,i)=>`<div class="im"><img src="${m.src}" alt="Gambar ${i+1}">${i?'':'<span class="cv">COVER</span>'}<div class="ia">${i?`<button type="button" class="ib" data-a="imgcover" data-i="${i}" aria-label="Jadikan gambar ${i+1} sebagai cover">★</button>`:''}<button type="button" class="ib d" data-a="imgdel" data-i="${i}" aria-label="Hapus gambar ${i+1}">${ic('del')}</button></div></div>`).join('');
+  $('#cnt').textContent='('+cur.length+'/6)';
+}
+function form(p){
+  const d=$('#dlg');p=p||{y:new Date().getFullYear(),cat:'Web',t:'',d:'',prob:'',sol:'',hl:[],tech:'',demo:'',repo:'',imgs:[],pub:true};
+  cur=(p.imgs||[]).map(src=>({src}));
+  const opt=CATS.map(c=>`<option${(p.cat||'Web')===c?' selected':''}>${c}</option>`).join('');
+  d.innerHTML=`<h2 id="dt">${p.id?'Edit project':'Project baru'}</h2>
+<div class="g2"><div><label for="p0">Tahun</label><input id="p0" type="number" min="2000" max="2100" value="${esc(p.y||'')}"></div><div><label for="pc">Kategori</label><select id="pc">${opt}</select></div></div>
+<label for="p1">Judul</label><input id="p1" maxlength="80" value="${esc(p.t)}">
+<label for="p2">Deskripsi singkat (tampil di kartu)</label><textarea id="p2" maxlength="300">${esc(p.d)}</textarea>
+<label for="pp">Problem context</label><textarea id="pp" maxlength="600">${esc(p.prob)}</textarea>
+<label for="ps">Engineered solution</label><textarea id="ps" maxlength="600">${esc(p.sol)}</textarea>
+<label for="p8">Key highlights (satu poin per baris, maksimal 10)</label><textarea id="p8" rows="6">${esc((p.hl||[]).join('\n'))}</textarea>
+<label for="p3">Technologies (pisahkan dengan koma)</label><input id="p3" value="${esc(p.tech)}">
+<div class="g2"><div><label for="p5">GitHub repo</label><input id="p5" type="url" value="${esc(p.repo)}"></div><div><label for="p4">Link demo (opsional)</label><input id="p4" type="url" value="${esc(p.demo)}"></div></div>
+<label for="p9">Gambar <span id="cnt"></span></label><input id="p9" type="file" accept="image/*" multiple><p class="note">Maksimal 6 gambar, 2 MB per gambar. Gambar pertama jadi cover. Di website asli: diunggah ke Supabase Storage.</p><div class="igrid" id="ig"></div>
+<label for="p7">Status</label><select id="p7"><option value="1"${p.pub?' selected':''}>Tampil di website</option><option value="0"${p.pub?'':' selected'}>Draft (disembunyikan)</option></select>
+<div class="er" id="er" role="alert"></div><div class="acts" style="margin-top:8px"><button class="btn" data-a="savepr2" data-id="${p.id||''}">Simpan</button><button class="btn w" data-a="close">Batal</button></div>`;
+  imgGrid();d.showModal();$('#p1').focus();
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;const a=b.dataset.a;
+  if(a==='imgdel'){cur.splice(+b.dataset.i,1);imgGrid()}
+  else if(a==='imgcover'){const m=cur.splice(+b.dataset.i,1)[0];cur.unshift(m);imgGrid()}
+  else if(a==='savepr2'){
+    const v=i=>$('#'+i).value.trim(),er=$('#er'),id=+b.dataset.id,y=+v('p0');
+    if(!v('p1')){er.textContent='Judul wajib diisi.';return}
+    if(!(y>=2000&&y<=2100)){er.textContent='Tahun harus antara 2000 dan 2100.';return}
+    for(const k of ['p5','p4']){if(v(k)&&!/^https?:\/\//i.test(v(k))){er.textContent='Link harus diawali http:// atau https://';return}}
+    const hl=v('p8').split('\n').map(s=>s.trim()).filter(Boolean);
+    if(hl.length>10){er.textContent='Maksimal 10 key highlights.';return}
+    const o={y,cat:v('pc'),t:v('p1'),d:v('p2'),prob:v('pp'),sol:v('ps'),hl,tech:v('p3'),repo:v('p5'),demo:v('p4'),imgs:cur.map(m=>m.src),pub:v('p7')==='1'};
+    if(id){Object.assign(S.projects.find(x=>x.id===id),o)}else{S.projects.unshift({id:S.pid++,...o})}
+    $('#dlg').close();S.view='projects';render();toast('Project tersimpan');
+  }
+});
+document.addEventListener('change',e=>{
+  if(e.target.id!=='p9')return;
+  const er=$('#er');er.textContent='';
+  for(const f of e.target.files){
+    if(!f.type.startsWith('image/')){er.textContent='"'+f.name+'" bukan gambar.';continue}
+    if(f.size>2*1024*1024){er.textContent='"'+f.name+'" lebih dari 2 MB.';continue}
+    if(cur.length>=6){er.textContent='Maksimal 6 gambar.';break}
+    cur.push({src:URL.createObjectURL(f)});
+  }
+  e.target.value='';imgGrid();
+});
+P.exp='<rect x="3" y="7" width="18" height="13" rx="2"/><path d="M9 7V4h6v3M3 13h18"/>';
+P.cert='<circle cx="12" cy="9" r="6"/><path d="M8.5 14L7 22l5-3 5 3-1.5-8"/>';
+{const g=T.guest;delete T.guest;T.exp=['Experience','Pengalaman, prestasi, dan kegiatan.'];T.cert=['Sertifikasi','Sertifikat dan penghargaan yang kamu miliki.'];T.guest=g}
+IC.exp='exp';IC.cert='cert';
+S.xid=50;
+S.exps=[{id:21,date:'2026-02',t:'Juara II - LKS Cyber Security Tingkat Kabupaten 2026',org:'LKS SMK Tingkat Kabupaten Karanganyar',loc:'Karanganyar, Jawa Tengah',d:'Meraih Juara II pada Seleksi Lomba Keterampilan Siswa (LKS) Tingkat Kabupaten Karanganyar Tahun 2026 pada Mata Lomba Teknologi Keamanan Siber (Cyber Security), menguji analisis pertahanan jaringan dan mitigasi insiden siber.',hl:['Meraih prestasi Juara II Tingkat Kabupaten Karanganyar bidang Cyber Security.','Melakukan analisis keamanan jaringan, pemindaian kerentanan (vulnerability assessment), dan penanganan insiden digital.','Mempraktikkan teknik mitigasi dan pertahanan siber sesuai standar industri.'],tech:'Cyber Security, Network Defense, Linux, Vulnerability Assessment',imgs:[],pub:true}];
+S.certs=[{id:31,date:'2026-02-18',t:'Sertifikat Juara II LKS Cyber Security 2026',issuer:'Dinas Pendidikan Wilayah VI Prov. Jawa Tengah',d:'Sertifikat resmi penghargaan atas prestasi meraih Juara II Mata Lomba Teknologi Keamanan Siber (Cyber Security) pada Seleksi Lomba Keterampilan Siswa (LKS) Tingkat Kabupaten Karanganyar Tahun 2026.',cid:'400.3.8.6/75/2026',imgs:[],pub:true}];
+const fmtM=s=>s?new Date(s+'-01T00:00').toLocaleDateString('id-ID',{month:'long',year:'numeric'}):'';
+const fmtD=s=>s?new Date(s+'T00:00').toLocaleDateString('id-ID',{day:'numeric',month:'long',year:'numeric'}):'';
+function itemRow(k,x){
+  const when=k==='exp'?fmtM(x.date):fmtD(x.date),sub=k==='exp'?x.org:x.issuer;
+  const t=x.imgs&&x.imgs[0]?`<span class="th" style="padding:0;overflow:hidden"><img src="${x.imgs[0]}" alt="" style="width:100%;height:100%;object-fit:cover"></span>`:th(x.t,x.id);
+  const ex=k==='exp'?`<div class="chips">${chips(x.tech||'')}</div>`:(x.cid?`<div class="chips"><span>ID: ${esc(x.cid)}</span></div>`:'');
+  return `<div class="row">${t}<div class="tx"><b>${esc(x.t)}${x.pub?'':'<span class="tg">DRAFT</span>'}</b><p>${esc(when)} · ${esc(sub)}</p>${ex}</div><button class="sw" role="switch" aria-checked="${x.pub}" data-a="tog2" data-k="${k}" data-id="${x.id}"><i></i>${x.pub?'Tampil':'Draft'}</button><div class="acts"><button class="ib" data-a="ed2" data-k="${k}" data-id="${x.id}" aria-label="Edit ${esc(x.t)}">${ic('edit')}</button><button class="ib d" data-a="del2" data-k="${k}" data-id="${x.id}" aria-label="Hapus ${esc(x.t)}">${ic('del')}</button></div></div>`;
+}
+const _r=render;
+render=function(){
+  _r();
+  if(!S.user||(S.view!=='exp'&&S.view!=='cert'))return;
+  const k=S.view,L=k==='exp'?S.exps:S.certs;
+  $('.ph').insertAdjacentHTML('beforeend',`<button class="btn" data-a="new2" data-k="${k}">${ic('plus')}${k==='exp'?'Tambah experience':'Tambah sertifikat'}</button>`);
+  $('#ct').innerHTML=`<div class="card">${L.map(x=>itemRow(k,x)).join('')||'<p class="empty">Belum ada data. Klik tombol tambah untuk membuat yang pertama.</p>'}</div>`;
+};
+function form2(k,p){
+  const e=k==='exp',d=$('#dlg');
+  p=p||{date:'',t:'',org:'',loc:'',issuer:'',d:'',hl:[],tech:'',cid:'',imgs:[],pub:true};
+  cur=(p.imgs||[]).map(src=>({src}));
+  d.innerHTML=`<h2 id="dt">${p.id?'Edit':'Tambah'} ${e?'experience':'sertifikat'}</h2>
+<label for="q0">${e?'Bulan dan tahun':'Tanggal terbit'}</label><input id="q0" type="${e?'month':'date'}" value="${esc(p.date)}">
+<label for="q1">Judul</label><input id="q1" maxlength="120" value="${esc(p.t)}">
+<label for="q2">${e?'Penyelenggara / lembaga':'Penerbit'}</label><input id="q2" maxlength="120" value="${esc(e?p.org:p.issuer)}">
+${e?`<label for="q3">Lokasi</label><input id="q3" maxlength="80" value="${esc(p.loc)}">`:''}
+<label for="q4">Deskripsi</label><textarea id="q4" maxlength="700">${esc(p.d)}</textarea>
+${e?`<label for="q5">Key highlights (satu poin per baris, maksimal 10)</label><textarea id="q5" rows="5">${esc((p.hl||[]).join('\n'))}</textarea><label for="q6">Technologies (pisahkan dengan koma)</label><input id="q6" value="${esc(p.tech)}">`:`<label for="q7">Credential ID</label><input id="q7" maxlength="80" value="${esc(p.cid)}">`}
+<label for="p9">Gambar <span id="cnt"></span></label><input id="p9" type="file" accept="image/*" multiple><p class="note">Maksimal 6 gambar, 2 MB per gambar. Gambar pertama jadi cover. Di website asli: diunggah ke Supabase Storage.</p><div class="igrid" id="ig"></div>
+<label for="q8">Status</label><select id="q8"><option value="1"${p.pub?' selected':''}>Tampil di website</option><option value="0"${p.pub?'':' selected'}>Draft (disembunyikan)</option></select>
+<div class="er" id="er" role="alert"></div><div class="acts" style="margin-top:8px"><button class="btn" data-a="save2" data-k="${k}" data-id="${p.id||''}">Simpan</button><button class="btn w" data-a="close">Batal</button></div>`;
+  imgGrid();d.showModal();$('#q1').focus();
+}
+document.addEventListener('click',e=>{
+  const b=e.target.closest('[data-a]');if(!b)return;
+  const a=b.dataset.a,k=b.dataset.k,id=+b.dataset.id,L=k==='exp'?S.exps:S.certs;
+  if(a==='new2')form2(k);
+  else if(a==='ed2')form2(k,L.find(x=>x.id===id));
+  else if(a==='tog2'){const x=L.find(x=>x.id===id);x.pub=!x.pub;render();toast(x.pub?'Ditampilkan':'Disembunyikan')}
+  else if(a==='del2'){const x=L.find(x=>x.id===id);if(confirm('Hapus "'+x.t+'"?')){if(k==='exp')S.exps=S.exps.filter(y=>y.id!==id);else S.certs=S.certs.filter(y=>y.id!==id);render();toast('Data dihapus')}}
+  else if(a==='save2'){
+    const v=i=>$('#'+i).value.trim(),er=$('#er'),ex=k==='exp';
+    if(!v('q0')){er.textContent='Tanggal wajib diisi.';return}
+    if(!v('q1')){er.textContent='Judul wajib diisi.';return}
+    const o={date:v('q0'),t:v('q1'),d:v('q4'),imgs:cur.map(m=>m.src),pub:v('q8')==='1'};
+    if(ex){const hl=v('q5').split('\n').map(s=>s.trim()).filter(Boolean);if(hl.length>10){er.textContent='Maksimal 10 key highlights.';return}Object.assign(o,{org:v('q2'),loc:v('q3'),hl,tech:v('q6')})}
+    else Object.assign(o,{issuer:v('q2'),cid:v('q7')});
+    if(id)Object.assign(L.find(x=>x.id===id),o);else L.unshift({id:S.xid++,...o});
+    L.sort((x,y)=>y.date.localeCompare(x.date));
+    $('#dlg').close();render();toast('Tersimpan');
+  }
+});
+render();
+</script>
+</body>
+</html>
