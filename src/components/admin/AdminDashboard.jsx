@@ -94,6 +94,7 @@ const Icon = ({ name }) => {
     ),
     back: <path d="M19 12H5M12 19l-7-7 7-7" />,
     external: <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14L21 3" />,
+    menu: <path d="M4 6h16M4 12h16M4 18h16" />,
   };
 
   return (
@@ -108,6 +109,70 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
 
   // Active view
   const [view, setView] = useState('home'); // 'home' | 'profile' | 'projects' | 'exp' | 'cert' | 'guest'
+
+  // Mobile drawer state & refs
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const asideRef = useRef(null);
+
+  // Monitor breakpoint for mobile drawer
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const mq = window.matchMedia('(max-width: 820px)');
+    const updateMatches = () => {
+      setIsMobile(mq.matches);
+      if (!mq.matches) {
+        setMobileMenuOpen(false);
+      }
+    };
+    updateMatches();
+    if (mq.addEventListener) {
+      mq.addEventListener('change', updateMatches);
+      return () => mq.removeEventListener('change', updateMatches);
+    } else {
+      mq.addListener(updateMatches);
+      return () => mq.removeListener(updateMatches);
+    }
+  }, []);
+
+  // Update inert attribute on mobile drawer when closed
+  useEffect(() => {
+    if (asideRef.current) {
+      asideRef.current.inert = isMobile && !mobileMenuOpen;
+    }
+  }, [isMobile, mobileMenuOpen]);
+
+  // Handle Escape key to close mobile drawer and return focus to burger button
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape' && mobileMenuOpen) {
+        setMobileMenuOpen(false);
+        const burgerBtn = document.querySelector('.tb .bg');
+        if (burgerBtn) burgerBtn.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [mobileMenuOpen]);
+
+  const navigateTo = (nextView) => {
+    setView(nextView);
+    setMobileMenuOpen(false);
+    window.scrollTo(0, 0);
+  };
+
+  const toggleMobileMenu = () => {
+    setMobileMenuOpen((prev) => {
+      const next = !prev;
+      if (next) {
+        setTimeout(() => {
+          const activeNav = asideRef.current?.querySelector('.nv.on') || asideRef.current?.querySelector('.nv');
+          if (activeNav) activeNav.focus();
+        }, 50);
+      }
+      return next;
+    });
+  };
 
   // Data states
   const [profileForm, setProfileForm] = useState({
@@ -1085,15 +1150,40 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
   const publishedCount = projectsList.filter((p) => p.published).length;
 
   return (
-    <div className="lego-admin-scope">
+    <div className={`lego-admin-scope ${mobileMenuOpen ? 'mo' : ''}`}>
       {/* Toast Notification */}
       <div className={`lego-admin-toast ${toastMsg ? 'on' : ''}`} role="status">
         {toastMsg}
       </div>
 
+      {/* Mobile Top Bar */}
+      <div className="tb">
+        <button
+          type="button"
+          className="bg"
+          onClick={toggleMobileMenu}
+          aria-label={mobileMenuOpen ? 'Tutup menu' : 'Buka menu'}
+          aria-expanded={mobileMenuOpen}
+          aria-controls="sb"
+        >
+          <Icon name="menu" />
+        </button>
+        <span className="tt">
+          <LegoLogo />
+          FADHIL ADMIN
+        </span>
+      </div>
+
+      {/* Mobile Backdrop Overlay */}
+      <div
+        className="ov2"
+        onClick={() => setMobileMenuOpen(false)}
+        aria-hidden="true"
+      />
+
       <div className="shell">
-        {/* Sidebar */}
-        <aside>
+        {/* Sidebar Drawer */}
+        <aside id="sb" ref={asideRef}>
           <div className="brand">
             <LegoLogo />
             <div>
@@ -1105,60 +1195,48 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
           <button
             type="button"
             className={`nv ${view === 'home' ? 'on' : ''}`}
-            onClick={() => {
-              setView('home');
-              window.scrollTo(0, 0);
-            }}
+            onClick={() => navigateTo('home')}
+            {...(view === 'home' ? { 'aria-current': 'page' } : {})}
           >
             <Icon name="home" /> Ringkasan
           </button>
           <button
             type="button"
             className={`nv ${view === 'profile' ? 'on' : ''}`}
-            onClick={() => {
-              setView('profile');
-              window.scrollTo(0, 0);
-            }}
+            onClick={() => navigateTo('profile')}
+            {...(view === 'profile' ? { 'aria-current': 'page' } : {})}
           >
             <Icon name="user" /> Profil
           </button>
           <button
             type="button"
             className={`nv ${view === 'projects' ? 'on' : ''}`}
-            onClick={() => {
-              setView('projects');
-              window.scrollTo(0, 0);
-            }}
+            onClick={() => navigateTo('projects')}
+            {...(view === 'projects' ? { 'aria-current': 'page' } : {})}
           >
             <Icon name="proj" /> Project
           </button>
           <button
             type="button"
             className={`nv ${view === 'exp' ? 'on' : ''}`}
-            onClick={() => {
-              setView('exp');
-              window.scrollTo(0, 0);
-            }}
+            onClick={() => navigateTo('exp')}
+            {...(view === 'exp' ? { 'aria-current': 'page' } : {})}
           >
             <Icon name="exp" /> Experience
           </button>
           <button
             type="button"
             className={`nv ${view === 'cert' ? 'on' : ''}`}
-            onClick={() => {
-              setView('cert');
-              window.scrollTo(0, 0);
-            }}
+            onClick={() => navigateTo('cert')}
+            {...(view === 'cert' ? { 'aria-current': 'page' } : {})}
           >
             <Icon name="cert" /> Sertifikasi
           </button>
           <button
             type="button"
             className={`nv ${view === 'guest' ? 'on' : ''}`}
-            onClick={() => {
-              setView('guest');
-              window.scrollTo(0, 0);
-            }}
+            onClick={() => navigateTo('guest')}
+            {...(view === 'guest' ? { 'aria-current': 'page' } : {})}
           >
             <Icon name="chat" /> Guestbook
           </button>
@@ -1168,7 +1246,10 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
           <button
             type="button"
             className="nv"
-            onClick={onNavigateHome}
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onNavigateHome();
+            }}
             title="Lihat website publik"
           >
             <Icon name="external" /> Lihat Website
@@ -1177,7 +1258,10 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
           <button
             type="button"
             className="nv lo"
-            onClick={onLogout}
+            onClick={() => {
+              setMobileMenuOpen(false);
+              onLogout();
+            }}
             title="Keluar dari akun admin"
           >
             <Icon name="out" /> Keluar
@@ -1524,15 +1608,9 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                       <div className="tx">
                         <b>
                           {p.title}
-                          {p.year && (
-                            <span className="tg" style={{ background: '#1f4fb4' }}>
-                              {p.year} · {(p.category || 'Web').toUpperCase()}
-                            </span>
-                          )}
                           {!p.published && <span className="tg">DRAFT</span>}
                         </b>
                         <p>{p.description || 'Tidak ada deskripsi'}</p>
-                        <div className="chips">{renderChips(p.tech)}</div>
                       </div>
 
                       {/* Toggle Switch */}
@@ -1614,10 +1692,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                           {x.title}
                           {!x.published && <span className="tg">DRAFT</span>}
                         </b>
-                        <p>
-                          {formatExperiencePeriod(x.period)} · {x.organization || 'Tanpa Penyelenggara'}
-                        </p>
-                        <div className="chips">{renderChips(x.tech)}</div>
+                        <p>{x.description || 'Tidak ada deskripsi'}</p>
                       </div>
 
                       {/* Toggle Switch */}
@@ -1699,14 +1774,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                           {x.title}
                           {!x.published && <span className="tg">DRAFT</span>}
                         </b>
-                        <p>
-                          {formatCertificationDate(x.issued_on)} · {x.issuer || 'Tanpa Penerbit'}
-                        </p>
-                        {x.credential_id && (
-                          <div className="chips">
-                            <span>ID: {x.credential_id}</span>
-                          </div>
-                        )}
+                        <p>{x.description || 'Tidak ada deskripsi'}</p>
                       </div>
 
                       {/* Toggle Switch */}
