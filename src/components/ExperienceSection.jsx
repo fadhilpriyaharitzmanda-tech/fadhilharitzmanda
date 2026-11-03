@@ -62,18 +62,16 @@ export default function ExperienceSection() {
                 <div>
                   <div className="flex gap-4 md:gap-6 items-start">
                     <div className="w-14 h-14 md:w-16 md:h-16 border-3 border-on-surface bg-white rounded-xl flex-shrink-0 flex items-center justify-center p-2 brick-shadow overflow-hidden">
-                      {imagesList.length > 0 ? (
+                      {item.logo ? (
                         <img
-                          src={imagesList[0]}
-                          alt={title}
+                          src={item.logo}
+                          alt={organization || title}
                           loading="lazy"
-                          className="w-full h-full object-cover"
+                          className="w-full h-full object-contain"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                           }}
                         />
-                      ) : item.logo ? (
-                        <img src={item.logo} alt={organization} loading="lazy" className="w-full h-full object-contain" />
                       ) : (
                         <span className="material-symbols-outlined text-primary text-[28px]">work</span>
                       )}
@@ -148,35 +146,6 @@ export default function ExperienceSection() {
                           {t}
                         </span>
                       ))}
-                    </div>
-                  )}
-
-                  {/* Image Gallery Preview Thumbnails */}
-                  {imagesList.length > 0 && (
-                    <div className="flex flex-wrap gap-2 mt-4 pt-3 border-t border-surface-container">
-                      {imagesList.slice(0, 4).map((src, imgIdx) => (
-                        <div
-                          key={imgIdx}
-                          onClick={() => handleOpenDetail(item, 'experience')}
-                          className="w-16 h-12 rounded border-2 border-on-surface overflow-hidden cursor-pointer hover:opacity-90 transition-opacity flex-shrink-0"
-                          title="Lihat foto dokumentasi"
-                        >
-                          <img
-                            src={src}
-                            alt={`${title} foto ${imgIdx + 1}`}
-                            loading="lazy"
-                            className="w-full h-full object-cover"
-                          />
-                        </div>
-                      ))}
-                      {imagesList.length > 4 && (
-                        <div
-                          onClick={() => handleOpenDetail(item, 'experience')}
-                          className="w-16 h-12 rounded border-2 border-on-surface bg-brick-yellow flex items-center justify-center font-bold text-xs cursor-pointer"
-                        >
-                          +{imagesList.length - 4}
-                        </div>
-                      )}
                     </div>
                   )}
                 </div>

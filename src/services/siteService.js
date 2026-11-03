@@ -547,6 +547,34 @@ export const fetchRatingsSummary = async () => {
    ============================================================ */
 
 /**
+ * Upload an organization / company logo for an experience
+ */
+export const uploadExperienceLogo = async (file, expId) => {
+  if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
+  if (!file) throw new Error('Pilih file logo.');
+  if (!file.type.startsWith('image/')) throw new Error('File logo harus berupa gambar.');
+  if (file.size > 2 * 1024 * 1024) throw new Error('Ukuran logo maksimal 2 MB.');
+
+  const ext = file.name.split('.').pop() || 'png';
+  const fileName = `experiences/${expId}/logo_${crypto.randomUUID()}.${ext}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('project-images')
+    .upload(fileName, file, {
+      cacheControl: '3600',
+      upsert: true,
+    });
+
+  if (uploadError) throw uploadError;
+
+  const { data: publicUrlData } = supabase.storage
+    .from('project-images')
+    .getPublicUrl(fileName);
+
+  return publicUrlData.publicUrl;
+};
+
+/**
  * Fetch published experiences for public website
  * Ordered by period desc, created_at desc
  */
@@ -569,24 +597,45 @@ export const fetchPublishedExperiences = async () => {
       return defaultExperiences;
     }
 
-    return data.map((exp) => ({
-      id: exp.id,
-      title: exp.title || '',
-      role: exp.title || '',
-      organization: exp.organization || '',
-      company: exp.organization || '',
-      location: exp.location || '',
-      period: formatExperiencePeriod(exp.period),
-      raw_period: exp.period,
-      description: exp.description || '',
-      highlights: Array.isArray(exp.highlights) ? exp.highlights : [],
-      responsibilities: Array.isArray(exp.highlights) ? exp.highlights : [],
-      tech: exp.tech || '',
-      technologies: exp.tech ? exp.tech.split(',').map((t) => t.trim()).filter(Boolean) : [],
-      images: Array.isArray(exp.images) ? exp.images : [],
-      published: exp.published,
-      created_at: exp.created_at,
-    }));
+    return data.map((exp) => {
+      const rawImages = Array.isArray(exp.images) ? exp.images : [];
+      const logoEntry = rawImages.find((img) => typeof img === 'string' && (img.startsWith('LOGO::') || img.includes('/logo_')));
+      const uploadedLogo = logoEntry ? (logoEntry.startsWith('LOGO::') ? logoEntry.replace('LOGO::', '') : logoEntry) : null;
+
+      const matched = defaultExperiences.find(
+        (def) =>
+          (def.title || def.role || '').toLowerCase().trim() === (exp.title || '').toLowerCase().trim() ||
+          (def.organization || def.company || '').toLowerCase().trim() === (exp.organization || '').toLowerCase().trim()
+      );
+
+      const finalLogo = uploadedLogo || matched?.logo || null;
+      const docImages = rawImages.filter(
+        (img) => typeof img === 'string' && !img.startsWith('LOGO::') && !img.includes('/logo_')
+      );
+
+      return {
+        id: exp.id,
+        title: exp.title || '',
+        role: exp.title || '',
+        organization: exp.organization || '',
+        company: exp.organization || '',
+        location: exp.location || '',
+        period: formatExperiencePeriod(exp.period),
+        raw_period: exp.period,
+        description: exp.description || '',
+        highlights: Array.isArray(exp.highlights) ? exp.highlights : (matched?.responsibilities || []),
+        responsibilities: Array.isArray(exp.highlights) ? exp.highlights : (matched?.responsibilities || []),
+        tech: exp.tech || (matched?.technologies ? matched.technologies.join(', ') : ''),
+        technologies: exp.tech
+          ? exp.tech.split(',').map((t) => t.trim()).filter(Boolean)
+          : (matched?.technologies || []),
+        images: docImages.length > 0 ? docImages : (matched?.images ? matched.images.map((m) => (typeof m === 'string' ? m : m.src)) : []),
+        logo: finalLogo,
+        type: exp.type || matched?.type || 'Pengalaman',
+        published: exp.published,
+        created_at: exp.created_at,
+      };
+    });
   } catch (err) {
     console.error('fetchPublishedExperiences exception:', err);
     return defaultExperiences;
@@ -605,7 +654,30 @@ export const fetchAllExperiencesAdmin = async () => {
     .order('created_at', { ascending: false });
 
   if (error) throw error;
-  return data || [];
+  if (!data) return [];
+
+  return data.map((exp) => {
+    const rawImages = Array.isArray(exp.images) ? exp.images : [];
+    const logoEntry = rawImages.find((img) => typeof img === 'string' && (img.startsWith('LOGO::') || img.includes('/logo_')));
+    const uploadedLogo = logoEntry ? (logoEntry.startsWith('LOGO::') ? logoEntry.replace('LOGO::', '') : logoEntry) : null;
+
+    const matched = defaultExperiences.find(
+      (def) =>
+        (def.title || def.role || '').toLowerCase().trim() === (exp.title || '').toLowerCase().trim() ||
+        (def.organization || def.company || '').toLowerCase().trim() === (exp.organization || '').toLowerCase().trim()
+    );
+
+    const finalLogo = uploadedLogo || matched?.logo || null;
+    const docImages = rawImages.filter(
+      (img) => typeof img === 'string' && !img.startsWith('LOGO::') && !img.includes('/logo_')
+    );
+
+    return {
+      ...exp,
+      logo: finalLogo,
+      images: docImages,
+    };
+  });
 };
 
 /**
@@ -619,6 +691,18 @@ export const createExperience = async (expData) => {
   const periodRaw = expData.period.trim();
   const periodNormalized = periodRaw.length === 7 ? `${periodRaw}-01` : periodRaw;
 
+  const imagesToSave = [];
+  if (expData.logo) {
+    imagesToSave.push(expData.logo.includes('/logo_') ? expData.logo : `LOGO::${expData.logo}`);
+  }
+  if (Array.isArray(expData.images)) {
+    for (const img of expData.images) {
+      if (typeof img === 'string' && !img.startsWith('LOGO::') && !img.includes('/logo_')) {
+        imagesToSave.push(img);
+      }
+    }
+  }
+
   const payload = {
     id: expData.id || crypto.randomUUID(),
     period: periodNormalized,
@@ -628,7 +712,7 @@ export const createExperience = async (expData) => {
     description: expData.description?.trim() || '',
     highlights: Array.isArray(expData.highlights) ? expData.highlights : [],
     tech: expData.tech?.trim() || '',
-    images: Array.isArray(expData.images) ? expData.images : [],
+    images: imagesToSave,
     published: Boolean(expData.published),
   };
 
@@ -648,6 +732,18 @@ export const updateExperience = async (id, expData, deletedImageUrls = []) => {
   const periodRaw = expData.period.trim();
   const periodNormalized = periodRaw.length === 7 ? `${periodRaw}-01` : periodRaw;
 
+  const imagesToSave = [];
+  if (expData.logo) {
+    imagesToSave.push(expData.logo.includes('/logo_') ? expData.logo : `LOGO::${expData.logo}`);
+  }
+  if (Array.isArray(expData.images)) {
+    for (const img of expData.images) {
+      if (typeof img === 'string' && !img.startsWith('LOGO::') && !img.includes('/logo_')) {
+        imagesToSave.push(img);
+      }
+    }
+  }
+
   const payload = {
     period: periodNormalized,
     title: expData.title.trim(),
@@ -656,7 +752,7 @@ export const updateExperience = async (id, expData, deletedImageUrls = []) => {
     description: expData.description?.trim() || '',
     highlights: Array.isArray(expData.highlights) ? expData.highlights : [],
     tech: expData.tech?.trim() || '',
-    images: Array.isArray(expData.images) ? expData.images : [],
+    images: imagesToSave,
     published: Boolean(expData.published),
   };
 

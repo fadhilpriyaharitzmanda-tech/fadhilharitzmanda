@@ -19,6 +19,7 @@ import {
   deleteExperience,
   toggleExperiencePublished,
   uploadExperienceImages,
+  uploadExperienceLogo,
   formatExperiencePeriod,
   importDefaultExperiencesToSupabase,
   fetchAllCertificationsAdmin,
@@ -265,10 +266,12 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     description: '',
     highlightsText: '',
     tech: '',
+    logo: '',
     images: [],
     published: true,
   });
   const [deletedExpImages, setDeletedExpImages] = useState([]);
+  const [deletedExpLogo, setDeletedExpLogo] = useState('');
   const [expUploading, setExpUploading] = useState(false);
   const [expModalError, setExpModalError] = useState('');
   const [importingExp, setImportingExp] = useState(false);
@@ -752,9 +755,11 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
       description: '',
       highlightsText: '',
       tech: '',
+      logo: '',
       images: [],
       published: true,
     });
+    setDeletedExpLogo('');
     setExpModalError('');
     setExpModalOpen(true);
   };
@@ -762,6 +767,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
   const openEditExpModal = (exp) => {
     setEditingExp(exp);
     setDeletedExpImages([]);
+    setDeletedExpLogo('');
 
     let rawPeriod = '';
     if (exp.period) {
@@ -781,11 +787,50 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
       description: exp.description || '',
       highlightsText: hl,
       tech: exp.tech || '',
+      logo: exp.logo || '',
       images: Array.isArray(exp.images) ? [...exp.images] : [],
       published: exp.published !== undefined ? Boolean(exp.published) : true,
     });
     setExpModalError('');
     setExpModalOpen(true);
+  };
+
+  const handleLogoFileChangeExp = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setExpModalError('');
+
+    if (!file.type.startsWith('image/')) {
+      setExpModalError('File logo harus berupa gambar.');
+      e.target.value = '';
+      return;
+    }
+
+    if (file.size > 2 * 1024 * 1024) {
+      setExpModalError('Ukuran file logo maksimal 2 MB.');
+      e.target.value = '';
+      return;
+    }
+
+    setExpUploading(true);
+    try {
+      const expId = expForm.id || crypto.randomUUID();
+      if (!expForm.id) {
+        setExpForm((prev) => ({ ...prev, id: expId }));
+      }
+      const publicUrl = await uploadExperienceLogo(file, expId);
+      if (expForm.logo && expForm.logo.includes('/experiences/')) {
+        setDeletedExpLogo(expForm.logo);
+      }
+      setExpForm((prev) => ({ ...prev, logo: publicUrl }));
+      showToast('Logo lembaga berhasil diunggah!');
+    } catch (err) {
+      console.error('Upload logo error:', err);
+      setExpModalError(err.message || 'Gagal mengunggah logo.');
+    } finally {
+      setExpUploading(false);
+      e.target.value = '';
+    }
   };
 
   const handleImageFilesChangeExp = async (e) => {
@@ -894,15 +939,21 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
         description: expForm.description.trim(),
         highlights: hl,
         tech: expForm.tech.trim(),
+        logo: expForm.logo,
         images: expForm.images,
         published: Boolean(expForm.published),
       };
+
+      const allDeleted = [...deletedExpImages];
+      if (deletedExpLogo) {
+        allDeleted.push(deletedExpLogo);
+      }
 
       if (editingExp) {
         const updated = await updateExperience(
           editingExp.id,
           payload,
-          deletedExpImages
+          allDeleted
         );
         setExperiencesList((prev) =>
           prev
@@ -1292,20 +1343,9 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
             </div>
 
             {view === 'projects' && (
-              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  className="btn w"
-                  onClick={handleImportDefaults}
-                  disabled={importing}
-                  title="Pulihkan dan masukkan 4 project bawaan ke database"
-                >
-                  {importing ? 'Memulihkan...' : 'Pulihkan 4 Project Bawaan'}
-                </button>
-                <button type="button" className="btn" onClick={openNewProjectModal}>
-                  <Icon name="plus" /> Tambah project
-                </button>
-              </div>
+              <button type="button" className="btn" onClick={openNewProjectModal}>
+                <Icon name="plus" /> Tambah project
+              </button>
             )}
 
             {view === 'exp' && (
@@ -1672,11 +1712,18 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                         className="th"
                         style={{
                           background: COLORS[idx % COLORS.length],
-                          padding: 0,
+                          padding: x.logo ? '3px' : 0,
                           overflow: 'hidden',
                         }}
                       >
-                        {coverImg ? (
+                        {x.logo ? (
+                          <img
+                            src={x.logo}
+                            alt={x.title}
+                            loading="lazy"
+                            style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#fff', borderRadius: '4px' }}
+                          />
+                        ) : coverImg ? (
                           <img
                             src={coverImg}
                             alt={x.title}
@@ -1894,36 +1941,6 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
           >
             <h2>{editingProject ? 'Edit project' : 'Project baru'}</h2>
 
-            {!editingProject && (
-              <div
-                style={{
-                  marginBottom: '16px',
-                  padding: '10px 14px',
-                  background: 'var(--adm-soft)',
-                  border: '2px dashed var(--adm-ink)',
-                  borderRadius: '9px',
-                }}
-              >
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
-                  💡 Isi otomatis dari 4 project bawaan:
-                </span>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {defaultProjects.map((p) => (
-                    <button
-                      key={p.id}
-                      type="button"
-                      className="btn w"
-                      style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
-                      onClick={() => fillFromDefaultProject(p)}
-                      title={`Isi form dengan data ${p.title}`}
-                    >
-                      {p.title.split(' - ')[0]}
-                    </button>
-                  ))}
-                </div>
-              </div>
-            )}
-
             <form onSubmit={handleSaveProjectModal}>
               <div className="g2">
                 <div>
@@ -2125,68 +2142,6 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
           >
             <h2>{editingExp ? 'Edit experience' : 'Tambah experience'}</h2>
 
-            {!editingExp && defaultExperiencesData.length > 0 && (
-              <div
-                style={{
-                  marginBottom: '16px',
-                  padding: '10px 14px',
-                  background: 'var(--adm-soft)',
-                  border: '2px dashed var(--adm-ink)',
-                  borderRadius: '9px',
-                }}
-              >
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
-                  💡 Isi otomatis dari experience bawaan:
-                </span>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {defaultExperiencesData.map((exp, idx) => {
-                    const expTitle = exp.title || exp.role || 'Experience';
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        className="btn w"
-                        style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
-                        onClick={() => {
-                          const periodMap = {
-                            'exp-lks-cyber': '2026-02',
-                            'exp-jagoan-hosting': '2026-02',
-                            'exp-jambore-provinsi': '2026-03',
-                            'exp-jambore-kabupaten': '2026-01',
-                            'exp-ozeva-coding': '2026-02',
-                          };
-                          const rawPeriod = periodMap[exp.id] || (exp.period && /^\d{4}-\d{2}/.test(exp.period) ? exp.period.slice(0, 7) : '2026-02');
-                          const hl = Array.isArray(exp.highlights)
-                            ? exp.highlights.join('\n')
-                            : (Array.isArray(exp.responsibilities) ? exp.responsibilities.join('\n') : '');
-                          const techStr = exp.tech || (Array.isArray(exp.technologies) ? exp.technologies.join(', ') : '');
-                          const imgs = Array.isArray(exp.images)
-                            ? exp.images.map((img) => (typeof img === 'string' ? img : img.src))
-                            : [];
-                          setExpForm((prev) => ({
-                            ...prev,
-                            period: rawPeriod,
-                            title: expTitle,
-                            organization: exp.organization || exp.company || '',
-                            location: exp.location || '',
-                            description: exp.description || '',
-                            highlightsText: hl,
-                            tech: techStr,
-                            images: imgs,
-                            published: true,
-                          }));
-                          showToast(`Form diisi dengan data: ${expTitle.split(' - ')[0]}`);
-                        }}
-                        title={`Isi form dengan data ${expTitle}`}
-                      >
-                        {expTitle.split(' - ')[0] || expTitle}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
-
             <form onSubmit={handleSaveExpModal}>
               <label htmlFor="q0">Bulan dan tahun *</label>
               <input
@@ -2252,8 +2207,57 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 placeholder="Cyber Security, Network Defense, Linux"
               />
 
+              <label htmlFor="exp-logo">Logo Lembaga / Organisasi (opsional)</label>
+              <input
+                id="exp-logo"
+                type="file"
+                accept="image/*"
+                disabled={expUploading}
+                onChange={handleLogoFileChangeExp}
+              />
+              <p className="note">
+                Format gambar (PNG, JPG, WebP, SVG), maksimal 2 MB. Logo ini ditampilkan di kotak logo sebelah judul pada website publik.
+              </p>
+              {expForm.logo && (
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginTop: '8px', marginBottom: '14px' }}>
+                  <div
+                    style={{
+                      width: '52px',
+                      height: '52px',
+                      border: '2px solid var(--adm-ink)',
+                      borderRadius: '8px',
+                      background: '#ffffff',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '4px',
+                      overflow: 'hidden',
+                    }}
+                  >
+                    <img
+                      src={expForm.logo}
+                      alt="Logo preview"
+                      style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain' }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn w"
+                    style={{ padding: '4px 10px', fontSize: '0.78rem' }}
+                    onClick={() => {
+                      if (expForm.logo && expForm.logo.includes('/experiences/')) {
+                        setDeletedExpLogo(expForm.logo);
+                      }
+                      setExpForm((prev) => ({ ...prev, logo: '' }));
+                    }}
+                  >
+                    Hapus logo
+                  </button>
+                </div>
+              )}
+
               <label htmlFor="exp-imgs">
-                Gambar ({expForm.images.length}/6)
+                Gambar Dokumentasi Detail ({expForm.images.length}/6)
               </label>
               <input
                 id="exp-imgs"
@@ -2264,7 +2268,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 onChange={handleImageFilesChangeExp}
               />
               <p className="note">
-                Maksimal 6 gambar, 2 MB per gambar. Gambar pertama otomatis jadi COVER. Klik ★ untuk mengubah cover.
+                Maksimal 6 gambar, 2 MB per gambar. Gambar akan tampil di galeri foto saat pengunjung membuka detail modal di website.
               </p>
 
               {/* Experience Images Grid */}
@@ -2345,60 +2349,6 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
             aria-modal="true"
           >
             <h2>{editingCert ? 'Edit sertifikat' : 'Tambah sertifikat'}</h2>
-
-            {!editingCert && defaultCertificationsData.length > 0 && (
-              <div
-                style={{
-                  marginBottom: '16px',
-                  padding: '10px 14px',
-                  background: 'var(--adm-soft)',
-                  border: '2px dashed var(--adm-ink)',
-                  borderRadius: '9px',
-                }}
-              >
-                <span style={{ fontSize: '0.8rem', fontWeight: 700, display: 'block', marginBottom: '8px' }}>
-                  💡 Isi otomatis dari sertifikasi bawaan:
-                </span>
-                <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
-                  {defaultCertificationsData.map((c, idx) => {
-                    const certTitle = c.title || c.name || 'Sertifikat';
-                    return (
-                      <button
-                        key={idx}
-                        type="button"
-                        className="btn w"
-                        style={{ padding: '4px 10px', fontSize: '0.78rem', borderRadius: '7px' }}
-                        onClick={() => {
-                          const dateMap = {
-                            'cert-lks': '2026-02-18',
-                            'cert-jambore-kabupaten': '2026-01-15',
-                            'cert-ozeva': '2026-05-09',
-                          };
-                          const rawDate = dateMap[c.id] || (c.issued_on && /^\d{4}-\d{2}-\d{2}/.test(c.issued_on) ? c.issued_on : '2026-01-01');
-                          const imgs = Array.isArray(c.images)
-                            ? c.images.map((img) => (typeof img === 'string' ? img : img.src))
-                            : [];
-                          setCertForm((prev) => ({
-                            ...prev,
-                            issued_on: rawDate,
-                            title: certTitle,
-                            issuer: c.issuer || '',
-                            description: c.description || '',
-                            credential_id: c.credential_id || c.credentialId || '',
-                            images: imgs,
-                            published: true,
-                          }));
-                          showToast(`Form diisi dengan data: ${certTitle.split(' - ')[0]}`);
-                        }}
-                        title={`Isi form dengan data ${certTitle}`}
-                      >
-                        {certTitle.split(' - ')[0] || certTitle}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            )}
 
             <form onSubmit={handleSaveCertModal}>
               <label htmlFor="c0">Tanggal terbit *</label>
