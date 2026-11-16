@@ -53,7 +53,11 @@ export default function HobiSection() {
   const items = hobbies && hobbies.length > 0 ? hobbies : defaultHobbies;
 
   return (
-    <section id="hobi" className="hobi-section" aria-labelledby="hobi-judul">
+    <section
+      id="hobi"
+      className="hobi-section w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16 mt-16 mb-24 md:mb-32 scroll-mt-28"
+      aria-labelledby="hobi-judul"
+    >
       <p className="hobi-tag">WHAT I ENJOY</p>
       <h2 id="hobi-judul" className="hobi-title">
         HOBI <span>&amp; MINAT</span>
@@ -95,8 +99,6 @@ export default function HobiSection() {
           );
         })}
       </div>
-
-      <div className="hobi-base" aria-hidden="true" />
     </section>
   );
 }

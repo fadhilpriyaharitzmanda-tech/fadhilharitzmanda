@@ -9,9 +9,6 @@
 }
 
 .hobi-section {
-  max-width: 1120px;
-  margin: 0 auto;
-  padding: 64px 5vw 40px;
   position: relative;
 }
 
@@ -165,28 +162,7 @@
   background: var(--c);
 }
 
-.hobi-base {
-  margin-top: 64px;
-  height: 34px;
-  background: var(--hobi-green);
-  border: 4px solid var(--hobi-ink);
-  position: relative;
-}
-
-.hobi-base::before {
-  content: "";
-  position: absolute;
-  left: 10px;
-  right: 10px;
-  top: -12px;
-  height: 12px;
-  background: radial-gradient(circle at 50% 100%, var(--hobi-green) 0 4.5px, var(--hobi-ink) 4.5px 8px, transparent 8.2px) 0 0/32px 12px repeat-x;
-}
-
 @media (max-width: 560px) {
-  .hobi-section {
-    padding-top: 44px;
-  }
   .hobi-grid {
     grid-template-columns: 1fr;
     gap: 38px;
