@@ -10,6 +10,13 @@
 
 .hobi-section {
   position: relative;
+  margin-bottom: 120px;
+}
+
+@media (max-width: 768px) {
+  .hobi-section {
+    margin-bottom: 72px;
+  }
 }
 
 .hobi-tag {

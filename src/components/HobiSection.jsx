@@ -55,7 +55,7 @@ export default function HobiSection() {
   return (
     <section
       id="hobi"
-      className="hobi-section w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16 mt-16 mb-24 md:mb-32 scroll-mt-28"
+      className="hobi-section w-full max-w-[1600px] mx-auto px-6 md:px-12 lg:px-16 mb-32 scroll-mt-28"
       aria-labelledby="hobi-judul"
     >
       <p className="hobi-tag">WHAT I ENJOY</p>
