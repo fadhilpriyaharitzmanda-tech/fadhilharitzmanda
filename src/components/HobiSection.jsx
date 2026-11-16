@@ -62,9 +62,6 @@ export default function HobiSection() {
       <h2 id="hobi-judul" className="hobi-title">
         HOBI <span>&amp; MINAT</span>
       </h2>
-      <p className="hobi-lead">
-        Hal-hal yang saya nikmati di sela belajar dan ngoding. Disusun satu per satu seperti balok LEGO.
-      </p>
 
       <div className="hobi-grid" id="hobi-grid">
         {items.map((item) => {
