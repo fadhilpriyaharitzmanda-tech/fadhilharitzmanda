@@ -9,6 +9,7 @@ import AboutSection from './components/AboutSection';
 import ExperienceSection from './components/ExperienceSection';
 import CertificationsSection from './components/CertificationsSection';
 import SkillsSection from './components/SkillsSection';
+import HobiSection from './components/HobiSection';
 import ProjectsSection from './components/ProjectsSection';
 import ContactSection from './components/ContactSection';
 import Footer from './components/Footer';
@@ -34,6 +35,7 @@ function PublicPortfolio() {
           <CertificationsSection />
           <SkillsSection />
         </div>
+        <HobiSection />
         <ProjectsSection />
         <ContactSection />
       </main>

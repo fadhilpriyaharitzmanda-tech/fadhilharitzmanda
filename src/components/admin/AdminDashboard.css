@@ -964,3 +964,127 @@
   }
 }
 
+/* Hobby Live Preview Card in Admin Modal */
+.hobi-modal-preview {
+  margin: 12px 0 20px;
+  padding: 16px;
+  background: #f6f6f4;
+  border: 2px dashed #141414;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.hobi-modal-preview .hobi-preview-label {
+  font-family: 'Pixelify Sans', ui-monospace, monospace;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: #141414;
+  margin-bottom: 16px;
+  align-self: flex-start;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.hobi-modal-preview .hobi-card {
+  --c: #b3121a;
+  --ic: #ffffff;
+  position: relative;
+  background: #ffffff;
+  border: 4px solid #141414;
+  box-shadow: 6px 6px 0 #141414;
+  padding: 22px 20px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  width: 100%;
+  max-width: 300px;
+}
+
+.hobi-modal-preview .hobi-card.yellow {
+  --c: #ffd500;
+  --ic: #141414;
+}
+
+.hobi-modal-preview .hobi-card.blue {
+  --c: #1f4fb4;
+  --ic: #ffffff;
+}
+
+.hobi-modal-preview .hobi-card.green {
+  --c: #1a9e4a;
+  --ic: #ffffff;
+}
+
+.hobi-modal-preview .hobi-card::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  top: -12px;
+  height: 12px;
+  pointer-events: none;
+  background: radial-gradient(circle at 50% 100%, var(--c) 0 4.5px, #141414 4.5px 8px, transparent 8.2px) 0 0/32px 12px repeat-x;
+}
+
+.hobi-modal-preview .hobi-ic {
+  width: 54px;
+  height: 54px;
+  display: grid;
+  place-items: center;
+  background: var(--c);
+  color: var(--ic);
+  border: 3px solid #141414;
+  box-shadow: 3px 3px 0 #141414;
+}
+
+.hobi-modal-preview .hobi-ic svg {
+  width: 28px;
+  height: 28px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2.2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.hobi-modal-preview .hobi-card h3 {
+  font: 700 1.2rem 'Pixelify Sans', ui-monospace, monospace;
+  margin: 4px 0 0;
+  color: #141414;
+}
+
+.hobi-modal-preview .hobi-card p {
+  margin: 0;
+  color: #444;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.hobi-modal-preview .hobi-lv {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.hobi-modal-preview .hobi-lv b {
+  font: 500 0.72rem 'Pixelify Sans', ui-monospace, monospace;
+  margin-right: 4px;
+  color: #555;
+}
+
+.hobi-modal-preview .hobi-lv i {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  border: 2.5px solid #141414;
+  background: #ffffff;
+  display: inline-block;
+}
+
+.hobi-modal-preview .hobi-lv i.on {
+  background: var(--c);
+}
+

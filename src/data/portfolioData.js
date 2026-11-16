@@ -601,3 +601,67 @@ export const projects = [
     featured: true
   }
 ];
+
+export const defaultHobbies = [
+  {
+    id: '1',
+    title: 'Ngoding',
+    description: 'Membangun website dan aplikasi kecil, lalu belajar dari setiap error yang muncul.',
+    icon: 'code',
+    color: 'red',
+    level: 5,
+    sort_order: 1,
+    published: true,
+  },
+  {
+    id: '2',
+    title: 'Edit Video',
+    description: 'Menyusun klip, narasi, dan musik menjadi cerita pendek yang enak ditonton.',
+    icon: 'video',
+    color: 'yellow',
+    level: 3,
+    sort_order: 2,
+    published: true,
+  },
+  {
+    id: '3',
+    title: 'Mendengarkan Musik',
+    description: 'Teman setia saat ngoding, belajar, dan menenangkan pikiran.',
+    icon: 'music',
+    color: 'blue',
+    level: 5,
+    sort_order: 3,
+    published: true,
+  },
+  {
+    id: '4',
+    title: 'Gaming',
+    description: 'Bermain game untuk melepas penat dan melatih strategi.',
+    icon: 'game',
+    color: 'green',
+    level: 4,
+    sort_order: 4,
+    published: true,
+  },
+  {
+    id: '5',
+    title: 'Hiking',
+    description: 'Menikmati udara pegunungan dan jalur pendakian bersama teman.',
+    icon: 'mountain',
+    color: 'red',
+    level: 3,
+    sort_order: 5,
+    published: true,
+  },
+  {
+    id: '6',
+    title: 'Membaca',
+    description: 'Artikel teknologi, dokumentasi, dan buku yang menambah wawasan.',
+    icon: 'book',
+    color: 'yellow',
+    level: 3,
+    sort_order: 6,
+    published: true,
+  },
+];
+

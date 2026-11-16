@@ -30,12 +30,20 @@ import {
   uploadCertificationImages,
   formatCertificationDate,
   importDefaultCertificationsToSupabase,
+  fetchAllHobbiesAdmin,
+  createHobby,
+  updateHobby,
+  deleteHobby,
+  toggleHobbyPublished,
+  importDefaultHobbiesToSupabase,
 } from '../../services/siteService';
 import {
   projects as defaultProjects,
   experiences as defaultExperiencesData,
   certifications as defaultCertificationsData,
+  defaultHobbies,
 } from '../../data/portfolioData';
+import { renderHobbySvg } from '../HobiSection';
 import { useSiteData } from '../../context/SiteContext';
 import './AdminDashboard.css';
 
@@ -77,6 +85,12 @@ const Icon = ({ name }) => {
       <>
         <circle cx="12" cy="9" r="6" />
         <path d="M8.5 14L7 22l5-3 5 3-1.5-8" />
+      </>
+    ),
+    hobby: (
+      <>
+        <rect x="2" y="7" width="20" height="11" rx="5" />
+        <path d="M7 10v5M4.5 12.5h5M16 11h.01M18.5 14h.01" />
       </>
     ),
     chat: <path d="M4 5h16v11H9l-5 4z" />,
@@ -332,21 +346,42 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     }
   };
 
+  // Hobbies State
+  const [hobbiesList, setHobbiesList] = useState([]);
+  const [hobbiesLoading, setHobbiesLoading] = useState(false);
+  const [hobbyModalOpen, setHobbyModalOpen] = useState(false);
+  const [editingHobby, setEditingHobby] = useState(null);
+  const [hobbyForm, setHobbyForm] = useState({
+    id: '',
+    title: '',
+    description: '',
+    icon: 'code',
+    color: 'red',
+    level: 3,
+    sort_order: 1,
+    published: true,
+  });
+  const [hobbySaving, setHobbySaving] = useState(false);
+  const [hobbyModalError, setHobbyModalError] = useState('');
+  const [importingHobbies, setImportingHobbies] = useState(false);
+
   // Fetch all admin data (only runs when AdminGate grants status === 'ok')
   const loadAdminData = async () => {
     try {
       setProjectsLoading(true);
       setExperiencesLoading(true);
       setCertificationsLoading(true);
+      setHobbiesLoading(true);
       setGuestLoading(true);
 
-      const [profData, projsData, msgsData, ratingData, expsData, certsData] = await Promise.all([
+      const [profData, projsData, msgsData, ratingData, expsData, certsData, hobsData] = await Promise.all([
         fetchSiteProfile(),
         fetchAllProjectsAdmin(),
         fetchAdminGuestbook(),
         fetchRatingsSummary(),
         fetchAllExperiencesAdmin(),
         fetchAllCertificationsAdmin(),
+        fetchAllHobbiesAdmin(),
       ]);
 
       if (profData) {
@@ -402,6 +437,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
       setProjectsList(currentProjs);
       setExperiencesList(currentExps);
       setCertificationsList(currentCerts);
+      setHobbiesList(hobsData || []);
       setGuestMessages(msgsData || []);
       setRatingsInfo(ratingData || { average: '0.0', count: 0, ratings: [] });
     } catch (err) {
@@ -411,6 +447,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
       setProjectsLoading(false);
       setExperiencesLoading(false);
       setCertificationsLoading(false);
+      setHobbiesLoading(false);
       setGuestLoading(false);
     }
   };
@@ -1174,6 +1211,135 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
     }
   };
 
+  // Hobby CRUD Handlers
+  const openNewHobbyModal = () => {
+    setEditingHobby(null);
+    setHobbyForm({
+      id: crypto.randomUUID(),
+      title: '',
+      description: '',
+      icon: 'code',
+      color: 'red',
+      level: 3,
+      sort_order: hobbiesList.length + 1,
+      published: true,
+    });
+    setHobbyModalError('');
+    setHobbyModalOpen(true);
+  };
+
+  const openEditHobbyModal = (hobby) => {
+    setEditingHobby(hobby);
+    setHobbyForm({
+      id: hobby.id,
+      title: hobby.title || '',
+      description: hobby.description || '',
+      icon: hobby.icon || 'code',
+      color: hobby.color || 'red',
+      level: hobby.level !== null && hobby.level !== undefined ? String(hobby.level) : '',
+      sort_order: hobby.sort_order ?? 0,
+      published: hobby.published ?? true,
+    });
+    setHobbyModalError('');
+    setHobbyModalOpen(true);
+  };
+
+  const handleTogglePublishHobby = async (hobby) => {
+    try {
+      const updated = await toggleHobbyPublished(hobby.id, hobby.published);
+      setHobbiesList((prev) =>
+        prev.map((item) => (item.id === hobby.id ? { ...item, published: updated.published } : item))
+      );
+      await refreshSiteData();
+      showToast(updated.published ? 'Hobi ditampilkan di website' : 'Hobi disembunyikan (Draft)');
+    } catch (err) {
+      console.error('Toggle hobby published error:', err);
+      showToast('Gagal mengubah status publikasi hobi.');
+    }
+  };
+
+  const handleDeleteHobby = async (hobby) => {
+    if (!window.confirm(`Hapus hobi "${hobby.title}"?`)) return;
+
+    try {
+      await deleteHobby(hobby.id);
+      setHobbiesList((prev) => prev.filter((item) => item.id !== hobby.id));
+      await refreshSiteData();
+      showToast('Hobi berhasil dihapus!');
+    } catch (err) {
+      console.error('Delete hobby error:', err);
+      showToast(err.message || 'Gagal menghapus hobi.');
+    }
+  };
+
+  const handleSaveHobbyModal = async (e) => {
+    e.preventDefault();
+    setHobbyModalError('');
+
+    const title = hobbyForm.title.trim();
+    if (!title) {
+      setHobbyModalError('Judul hobi wajib diisi.');
+      return;
+    }
+
+    setHobbySaving(true);
+    try {
+      const payload = {
+        id: hobbyForm.id,
+        title,
+        description: hobbyForm.description.trim(),
+        icon: hobbyForm.icon,
+        color: hobbyForm.color,
+        level: hobbyForm.level !== '' && hobbyForm.level !== null ? parseInt(hobbyForm.level, 10) : null,
+        sort_order: parseInt(hobbyForm.sort_order, 10) || 0,
+        published: Boolean(hobbyForm.published),
+      };
+
+      if (editingHobby) {
+        const updated = await updateHobby(editingHobby.id, payload);
+        setHobbiesList((prev) =>
+          prev
+            .map((item) => (item.id === editingHobby.id ? updated : item))
+            .sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+        );
+        showToast('Hobi berhasil diperbarui!');
+      } else {
+        const created = await createHobby(payload);
+        setHobbiesList((prev) =>
+          [...prev, created].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0))
+        );
+        showToast('Hobi baru berhasil ditambahkan!');
+      }
+
+      await refreshSiteData();
+      setHobbyModalOpen(false);
+    } catch (err) {
+      console.error('Save hobby error:', err);
+      setHobbyModalError(err.message || 'Gagal menyimpan hobi.');
+    } finally {
+      setHobbySaving(false);
+    }
+  };
+
+  const handleImportDefaultHobbies = async () => {
+    setImportingHobbies(true);
+    try {
+      const res = await importDefaultHobbiesToSupabase();
+      await loadAdminData();
+      await refreshSiteData();
+      showToast(
+        res.count > 0
+          ? `${res.count} hobi bawaan berhasil dipulihkan!`
+          : 'Semua hobi bawaan sudah ada di database.'
+      );
+    } catch (err) {
+      console.error('Import hobbies error:', err);
+      showToast(err.message || 'Gagal memulihkan hobi.');
+    } finally {
+      setImportingHobbies(false);
+    }
+  };
+
   // Guestbook Delete Message
   const handleDeleteGuestMessage = async (msg) => {
     if (!window.confirm(`Hapus pesan dari "${msg.name}"?`)) return;
@@ -1285,6 +1451,14 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
           </button>
           <button
             type="button"
+            className={`nv ${view === 'hobbies' ? 'on' : ''}`}
+            onClick={() => navigateTo('hobbies')}
+            {...(view === 'hobbies' ? { 'aria-current': 'page' } : {})}
+          >
+            <Icon name="hobby" /> Hobi
+          </button>
+          <button
+            type="button"
             className={`nv ${view === 'guest' ? 'on' : ''}`}
             onClick={() => navigateTo('guest')}
             {...(view === 'guest' ? { 'aria-current': 'page' } : {})}
@@ -1330,6 +1504,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 {view === 'projects' && 'Project'}
                 {view === 'exp' && 'Experience'}
                 {view === 'cert' && 'Sertifikasi'}
+                {view === 'hobbies' && 'Hobi'}
                 {view === 'guest' && 'Guestbook'}
               </h1>
               <p className="sub">
@@ -1338,6 +1513,7 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 {view === 'projects' && 'Tambah, ubah, atau sembunyikan project.'}
                 {view === 'exp' && 'Pengalaman, prestasi, dan kegiatan.'}
                 {view === 'cert' && 'Sertifikat dan penghargaan yang kamu miliki.'}
+                {view === 'hobbies' && 'Hal-hal yang disukai dan ditekuni di waktu luang.'}
                 {view === 'guest' && 'Pantau pesan dan hapus yang tidak pantas.'}
               </p>
             </div>
@@ -1382,6 +1558,23 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
               </div>
             )}
 
+            {view === 'hobbies' && (
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                <button
+                  type="button"
+                  className="btn w"
+                  onClick={handleImportDefaultHobbies}
+                  disabled={importingHobbies}
+                  title="Pulihkan dan masukkan 6 data hobi bawaan ke database"
+                >
+                  {importingHobbies ? 'Memulihkan...' : 'Pulihkan 6 Hobi Bawaan'}
+                </button>
+                <button type="button" className="btn" onClick={openNewHobbyModal}>
+                  <Icon name="plus" /> Tambah hobi
+                </button>
+              </div>
+            )}
+
             {view === 'profile' && (
               <button
                 type="button"
@@ -1414,6 +1607,10 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                 <div className="stat" style={{ '--c': '#ffd500' }}>
                   <b>{certificationsList.length}</b>
                   <span>Sertifikasi</span>
+                </div>
+                <div className="stat" style={{ '--c': '#1a9e4a' }}>
+                  <b>{hobbiesList.length}</b>
+                  <span>Hobi</span>
                 </div>
                 <div className="stat" style={{ '--c': '#1f4fb4' }}>
                   <b>{guestMessages.length}</b>
@@ -1854,6 +2051,99 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                           onClick={() => handleDeleteCert(x)}
                           aria-label={`Hapus ${x.title}`}
                           title="Hapus Sertifikat"
+                        >
+                          <Icon name="del" />
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+          )}
+
+          {/* VIEW: HOBI */}
+          {view === 'hobbies' && (
+            <div className="card">
+              {hobbiesLoading ? (
+                <p className="empty">Memuat daftar hobi...</p>
+              ) : hobbiesList.length === 0 ? (
+                <p className="empty">
+                  Belum ada data hobi. Klik tombol "+ Tambah hobi" di atas untuk membuat yang pertama.
+                </p>
+              ) : (
+                hobbiesList.map((h) => {
+                  const hobiColorHex = {
+                    red: '#b3121a',
+                    yellow: '#ffd500',
+                    blue: '#1f4fb4',
+                    green: '#1a9e4a',
+                  }[h.color] || '#b3121a';
+
+                  return (
+                    <div className="row" key={h.id}>
+                      <span
+                        className="th"
+                        style={{
+                          background: hobiColorHex,
+                          color: h.color === 'yellow' ? '#141414' : '#ffffff',
+                          display: 'grid',
+                          placeItems: 'center',
+                        }}
+                      >
+                        <svg
+                          viewBox="0 0 24 24"
+                          style={{
+                            width: '24px',
+                            height: '24px',
+                            fill: 'none',
+                            stroke: 'currentColor',
+                            strokeWidth: 2.2,
+                            strokeLinecap: 'round',
+                            strokeLinejoin: 'round',
+                          }}
+                        >
+                          {renderHobbySvg(h.icon)}
+                        </svg>
+                      </span>
+                      <div className="tx">
+                        <b>
+                          {h.title}
+                          {!h.published && <span className="tg">DRAFT</span>}
+                        </b>
+                        <p>{h.description || 'Tidak ada deskripsi'}</p>
+                      </div>
+
+                      {/* Toggle Switch */}
+                      <button
+                        type="button"
+                        className="sw"
+                        role="switch"
+                        aria-checked={h.published}
+                        onClick={() => handleTogglePublishHobby(h)}
+                        title={h.published ? 'Klik untuk sembunyikan' : 'Klik untuk tampilkan'}
+                      >
+                        <i />
+                        {h.published ? 'Tampil' : 'Draft'}
+                      </button>
+
+                      {/* Actions */}
+                      <div className="acts">
+                        <button
+                          type="button"
+                          className="ib"
+                          onClick={() => openEditHobbyModal(h)}
+                          aria-label={`Edit ${h.title}`}
+                          title="Edit Hobi"
+                        >
+                          <Icon name="edit" />
+                        </button>
+                        <button
+                          type="button"
+                          className="ib d"
+                          onClick={() => handleDeleteHobby(h)}
+                          aria-label={`Hapus ${h.title}`}
+                          title="Hapus Hobi"
                         >
                           <Icon name="del" />
                         </button>
@@ -2472,6 +2762,164 @@ export default function AdminDashboard({ user, onLogout, onNavigateHome }) {
                   className="btn w"
                   onClick={() => setCertModalOpen(false)}
                   disabled={certUploading}
+                >
+                  Batal
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Hobby Modal Dialog (Add / Edit) with Live Preview Card */}
+      {hobbyModalOpen && (
+        <div className="lego-modal-overlay" onClick={() => !hobbySaving && setHobbyModalOpen(false)}>
+          <div
+            className="lego-modal-content"
+            onClick={(e) => e.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+          >
+            <h2>{editingHobby ? 'Edit hobi' : 'Hobi baru'}</h2>
+
+            {/* Live Preview Card */}
+            <div className="hobi-modal-preview">
+              <span className="hobi-preview-label">Pratinjau Kartu:</span>
+              <div className={`hobi-card ${hobbyForm.color || 'red'}`}>
+                <div className="hobi-ic" aria-hidden="true">
+                  <svg viewBox="0 0 24 24">
+                    {renderHobbySvg(hobbyForm.icon)}
+                  </svg>
+                </div>
+                <h3>{hobbyForm.title || 'Judul Hobi'}</h3>
+                <p>{hobbyForm.description || 'Deskripsi singkat hobi akan muncul di sini...'}</p>
+                {hobbyForm.level ? (
+                  <div
+                    className="hobi-lv"
+                    role="img"
+                    aria-label={`Level ${hobbyForm.level} dari 5`}
+                  >
+                    <b>LEVEL</b>
+                    {[1, 2, 3, 4, 5].map((lvl) => (
+                      <i
+                        key={lvl}
+                        className={lvl <= parseInt(hobbyForm.level, 10) ? 'on' : ''}
+                      />
+                    ))}
+                  </div>
+                ) : null}
+              </div>
+            </div>
+
+            <form onSubmit={handleSaveHobbyModal}>
+              <label htmlFor="h-title">Judul *</label>
+              <input
+                id="h-title"
+                maxLength={100}
+                required
+                value={hobbyForm.title}
+                onChange={(e) => setHobbyForm({ ...hobbyForm, title: e.target.value })}
+                placeholder="Contoh: Ngoding"
+                autoFocus
+              />
+
+              <label htmlFor="h-desc">Deskripsi</label>
+              <textarea
+                id="h-desc"
+                maxLength={500}
+                value={hobbyForm.description}
+                onChange={(e) => setHobbyForm({ ...hobbyForm, description: e.target.value })}
+                placeholder="Membangun website dan aplikasi kecil, lalu belajar dari setiap error..."
+              />
+
+              <div className="g2">
+                <div>
+                  <label htmlFor="h-icon">Ikon</label>
+                  <select
+                    id="h-icon"
+                    value={hobbyForm.icon}
+                    onChange={(e) => setHobbyForm({ ...hobbyForm, icon: e.target.value })}
+                  >
+                    <option value="code">code (Kode)</option>
+                    <option value="video">video (Video)</option>
+                    <option value="music">music (Musik)</option>
+                    <option value="game">game (Game)</option>
+                    <option value="mountain">mountain (Gunung)</option>
+                    <option value="book">book (Buku)</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="h-color">Warna Balok</label>
+                  <select
+                    id="h-color"
+                    value={hobbyForm.color}
+                    onChange={(e) => setHobbyForm({ ...hobbyForm, color: e.target.value })}
+                  >
+                    <option value="red">red (Merah)</option>
+                    <option value="yellow">yellow (Kuning)</option>
+                    <option value="blue">blue (Biru)</option>
+                    <option value="green">green (Hijau)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div className="g2">
+                <div>
+                  <label htmlFor="h-level">Level (1-5, boleh kosong)</label>
+                  <select
+                    id="h-level"
+                    value={hobbyForm.level}
+                    onChange={(e) => setHobbyForm({ ...hobbyForm, level: e.target.value })}
+                  >
+                    <option value="">Tanpa level</option>
+                    <option value="1">Level 1</option>
+                    <option value="2">Level 2</option>
+                    <option value="3">Level 3</option>
+                    <option value="4">Level 4</option>
+                    <option value="5">Level 5</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="h-order">Urutan (angka)</label>
+                  <input
+                    id="h-order"
+                    type="number"
+                    value={hobbyForm.sort_order}
+                    onChange={(e) => setHobbyForm({ ...hobbyForm, sort_order: e.target.value })}
+                    placeholder="1"
+                  />
+                </div>
+              </div>
+
+              <label htmlFor="h-pub">Status Publikasi</label>
+              <select
+                id="h-pub"
+                value={hobbyForm.published ? '1' : '0'}
+                onChange={(e) =>
+                  setHobbyForm({ ...hobbyForm, published: e.target.value === '1' })
+                }
+              >
+                <option value="1">Tampil di website</option>
+                <option value="0">Draft (disembunyikan)</option>
+              </select>
+
+              {hobbyModalError && (
+                <div className="er" role="alert">
+                  {hobbyModalError}
+                </div>
+              )}
+
+              <div className="acts" style={{ marginTop: '22px' }}>
+                <button type="submit" className="btn" disabled={hobbySaving}>
+                  <Icon name="save" /> {hobbySaving ? 'Menyimpan...' : 'Simpan'}
+                </button>
+                <button
+                  type="button"
+                  className="btn w"
+                  onClick={() => setHobbyModalOpen(false)}
+                  disabled={hobbySaving}
                 >
                   Batal
                 </button>

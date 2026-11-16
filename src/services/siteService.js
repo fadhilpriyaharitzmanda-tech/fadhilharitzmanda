@@ -4,6 +4,7 @@ import {
   projects as defaultProjects,
   experiences as defaultExperiences,
   certifications as defaultCertifications,
+  defaultHobbies,
 } from '../data/portfolioData';
 
 /**
@@ -1086,6 +1087,175 @@ export const importDefaultCertificationsToSupabase = async () => {
     const { data, error } = await supabase.from('certifications').insert([item]).select().single();
     if (error) {
       console.error(`Gagal menyimpan sertifikasi "${item.title}":`, error);
+    } else if (data) {
+      inserted.push(data);
+    }
+  }
+
+  return { count: inserted.length, data: inserted };
+};
+
+/**
+ * Fetch published hobbies for public website
+ * Ordered by sort_order asc, created_at asc, only published=true
+ * If no data, returns empty array. If query fails, logs to console.error and returns defaultHobbies with isError=true
+ */
+export const fetchPublishedHobbies = async () => {
+  if (!isSupabaseConfigured) {
+    console.error('fetchPublishedHobbies error: Supabase not configured');
+    return { data: defaultHobbies, isError: true };
+  }
+  try {
+    const { data, error } = await supabase
+      .from('hobbies')
+      .select('*')
+      .eq('published', true)
+      .order('sort_order', { ascending: true })
+      .order('created_at', { ascending: true });
+
+    if (error) {
+      console.error('fetchPublishedHobbies error from Supabase:', error);
+      return { data: defaultHobbies, isError: true };
+    }
+
+    return { data: data || [], isError: false };
+  } catch (err) {
+    console.error('fetchPublishedHobbies exception:', err);
+    return { data: defaultHobbies, isError: true };
+  }
+};
+
+/**
+ * Fetch all hobbies for admin dashboard (published + drafts)
+ * Ordered by sort_order asc, created_at asc
+ */
+export const fetchAllHobbiesAdmin = async () => {
+  if (!isSupabaseConfigured) return [];
+  const { data, error } = await supabase
+    .from('hobbies')
+    .select('*')
+    .order('sort_order', { ascending: true })
+    .order('created_at', { ascending: true });
+
+  if (error) throw error;
+  return data || [];
+};
+
+/**
+ * Create a new hobby
+ */
+export const createHobby = async (hobbyData) => {
+  if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
+  if (!hobbyData.title || !hobbyData.title.trim()) {
+    throw new Error('Judul hobi wajib diisi.');
+  }
+
+  const payload = {
+    id: hobbyData.id || crypto.randomUUID(),
+    title: hobbyData.title.trim(),
+    description: hobbyData.description ? hobbyData.description.trim() : '',
+    icon: hobbyData.icon || 'code',
+    color: hobbyData.color || 'red',
+    level: hobbyData.level ? parseInt(hobbyData.level, 10) : null,
+    sort_order: parseInt(hobbyData.sort_order, 10) || 0,
+    published: Boolean(hobbyData.published),
+  };
+
+  const { data, error } = await supabase
+    .from('hobbies')
+    .insert([payload])
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Update existing hobby
+ */
+export const updateHobby = async (id, hobbyData) => {
+  if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
+  if (!hobbyData.title || !hobbyData.title.trim()) {
+    throw new Error('Judul hobi wajib diisi.');
+  }
+
+  const payload = {
+    title: hobbyData.title.trim(),
+    description: hobbyData.description ? hobbyData.description.trim() : '',
+    icon: hobbyData.icon || 'code',
+    color: hobbyData.color || 'red',
+    level: hobbyData.level ? parseInt(hobbyData.level, 10) : null,
+    sort_order: parseInt(hobbyData.sort_order, 10) || 0,
+    published: Boolean(hobbyData.published),
+  };
+
+  const { data, error } = await supabase
+    .from('hobbies')
+    .update(payload)
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Delete hobby
+ */
+export const deleteHobby = async (id) => {
+  if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
+  const { error } = await supabase.from('hobbies').delete().eq('id', id);
+  if (error) throw error;
+};
+
+/**
+ * Toggle hobby published status
+ */
+export const toggleHobbyPublished = async (id, currentPublished) => {
+  if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
+  const { data, error } = await supabase
+    .from('hobbies')
+    .update({ published: !currentPublished })
+    .eq('id', id)
+    .select()
+    .single();
+
+  if (error) throw error;
+  return data;
+};
+
+/**
+ * Import default hobbies to Supabase
+ */
+export const importDefaultHobbiesToSupabase = async () => {
+  if (!isSupabaseConfigured) throw new Error('Supabase belum dikonfigurasi.');
+  const current = await fetchAllHobbiesAdmin();
+  const currentTitles = new Set((current || []).map((h) => (h.title || '').toLowerCase().trim()));
+
+  const toInsert = defaultHobbies
+    .filter((def) => !currentTitles.has((def.title || '').toLowerCase().trim()))
+    .map((def, idx) => ({
+      id: crypto.randomUUID(),
+      title: def.title,
+      description: def.description || '',
+      icon: def.icon || 'code',
+      color: def.color || 'red',
+      level: def.level || null,
+      sort_order: def.sort_order ?? (idx + 1),
+      published: true,
+    }));
+
+  if (toInsert.length === 0) {
+    return { count: 0, message: 'Semua hobi bawaan sudah ada di database.' };
+  }
+
+  const inserted = [];
+  for (const item of toInsert) {
+    const { data, error } = await supabase.from('hobbies').insert([item]).select().single();
+    if (error) {
+      console.error(`Gagal menyimpan hobi "${item.title}":`, error);
     } else if (data) {
       inserted.push(data);
     }

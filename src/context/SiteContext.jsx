@@ -4,12 +4,14 @@ import {
   projects as defaultProjects,
   experiences as defaultExperiences,
   certifications as defaultCertifications,
+  defaultHobbies,
 } from '../data/portfolioData';
 import {
   fetchSiteProfile,
   fetchPublishedProjects,
   fetchPublishedExperiences,
   fetchPublishedCertifications,
+  fetchPublishedHobbies,
 } from '../services/siteService';
 
 const defaultProfile = {
@@ -26,6 +28,8 @@ const SiteContext = createContext({
   projects: defaultProjects,
   experiences: defaultExperiences,
   certifications: defaultCertifications,
+  hobbies: [],
+  hobbiesError: false,
   loading: true,
   refreshSiteData: async () => {},
 });
@@ -35,15 +39,18 @@ export const SiteProvider = ({ children }) => {
   const [projects, setProjects] = useState(defaultProjects);
   const [experiences, setExperiences] = useState(defaultExperiences);
   const [certifications, setCertifications] = useState(defaultCertifications);
+  const [hobbies, setHobbies] = useState([]);
+  const [hobbiesError, setHobbiesError] = useState(false);
   const [loading, setLoading] = useState(true);
 
   const loadData = useCallback(async () => {
     try {
-      const [profileData, projectsData, expData, certData] = await Promise.all([
+      const [profileData, projectsData, expData, certData, hobbiesRes] = await Promise.all([
         fetchSiteProfile(),
         fetchPublishedProjects(),
         fetchPublishedExperiences(),
         fetchPublishedCertifications(),
+        fetchPublishedHobbies(),
       ]);
 
       if (profileData) {
@@ -74,6 +81,16 @@ export const SiteProvider = ({ children }) => {
       } else {
         setCertifications(defaultCertifications);
       }
+
+      if (hobbiesRes) {
+        if (hobbiesRes.isError) {
+          setHobbies(hobbiesRes.data || defaultHobbies);
+          setHobbiesError(true);
+        } else {
+          setHobbies(hobbiesRes.data || []);
+          setHobbiesError(false);
+        }
+      }
     } catch (err) {
       console.warn('Error loading dynamic site data:', err);
     } finally {
@@ -92,6 +109,8 @@ export const SiteProvider = ({ children }) => {
         projects,
         experiences,
         certifications,
+        hobbies,
+        hobbiesError,
         loading,
         refreshSiteData: loadData,
       }}
